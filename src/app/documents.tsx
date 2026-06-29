@@ -52,6 +52,9 @@ export default function DocumentsScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <IdUploadField label="National ID/Philsys ID" />
+          <IdUploadField label="Senior Citizen ID" />
+          <IdUploadField label="Solo Parent ID" />
+          <IdUploadField label="PWD ID" />
         </ScrollView>
       </View>
     </SafeAreaView>

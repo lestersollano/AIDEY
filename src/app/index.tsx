@@ -4,24 +4,31 @@ import { SymbolView } from "expo-symbols";
 import { Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { AideyWordmark } from "@/components/aidey-wordmark";
 import { Text } from "@/components/text";
 import { colors } from "@/constants/colors";
+
+function pressableStyle(baseStyle: object, pressedStyle: object) {
+    return ({ pressed }: { pressed: boolean }) => [baseStyle, pressed && pressedStyle];
+}
 
 export default function HomeScreen() {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.content}>
                 <View style={styles.header}>
-                    <Pressable style={styles.headerButton} accessibilityLabel="Menu">
+                    <Pressable
+                        style={pressableStyle(styles.headerButton, styles.headerButtonPressed)}
+                        accessibilityLabel="Menu">
                         <SymbolView
                             name={{ ios: "line.3.horizontal", android: "menu", web: "menu" }}
                             size={24}
                             tintColor={colors.secondary}
                         />
                     </Pressable>
-                    <Text style={styles.title}>Aidey</Text>
+                    <AideyWordmark style={styles.title} />
                     <Pressable
-                        style={styles.headerButton}
+                        style={pressableStyle(styles.headerButton, styles.headerButtonPressed)}
                         accessibilityLabel="Settings"
                         onPress={() => router.push("/settings")}>
                         <SymbolView
@@ -34,7 +41,8 @@ export default function HomeScreen() {
 
                 <View style={styles.buttons}>
                     <Pressable
-                        style={styles.button}
+                        style={pressableStyle(styles.button, styles.buttonPressed)}
+                        android_ripple={{ color: colors.secondaryBorder }}
                         onPress={() => router.push("/documents")}>
                         <View style={styles.buttonRow}>
                             <View style={styles.buttonMedia}>
@@ -50,7 +58,8 @@ export default function HomeScreen() {
                         </View>
                     </Pressable>
                     <Pressable
-                        style={styles.button}
+                        style={pressableStyle(styles.button, styles.buttonPressed)}
+                        android_ripple={{ color: colors.secondaryBorder }}
                         onPress={() => router.push("/ai-assistant")}>
                         <View style={styles.buttonRow}>
                             <View style={styles.buttonMedia}>
@@ -122,12 +131,16 @@ const styles = StyleSheet.create({
         height: 40,
         alignItems: "center",
         justifyContent: "center",
+        borderRadius: 999,
+    },
+    headerButtonPressed: {
+        opacity: 0.5,
+        backgroundColor: colors.secondaryMuted,
     },
     title: {
         flex: 1,
         fontSize: 20,
         textAlign: "center",
-        color: colors.secondary,
     },
     middle: {
         flex: 1,
@@ -175,6 +188,10 @@ const styles = StyleSheet.create({
         backgroundColor: colors.secondaryMuted,
         borderWidth: 1,
         borderColor: colors.secondaryBorder,
+    },
+    buttonPressed: {
+        opacity: 0.75,
+        backgroundColor: colors.secondaryBorder,
     },
     buttonRow: {
         flexDirection: "row",

@@ -1,14 +1,14 @@
+import type { ReactNode } from 'react';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Text } from '@/components/text';
 import { colors } from '@/constants/colors';
 
 const HEADER_SIDE_WIDTH = 40;
 
 type ScreenHeaderProps = {
-  title: string;
+  title: ReactNode;
 };
 
 export function ScreenHeader({ title }: ScreenHeaderProps) {
@@ -26,7 +26,7 @@ export function ScreenHeader({ title }: ScreenHeaderProps) {
           />
         </Pressable>
       </View>
-      <Text style={styles.title}>{title}</Text>
+      <View style={styles.titleWrapper}>{title}</View>
       <View style={styles.side} />
     </View>
   );
@@ -49,10 +49,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: {
+  titleWrapper: {
     flex: 1,
-    fontSize: 17,
-    textAlign: 'center',
-    color: colors.secondary,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
