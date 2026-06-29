@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
 import { useRef, useState } from 'react';
 import {
@@ -14,7 +15,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AideyWordmark } from '@/components/aidey-wordmark';
 import { ScreenHeader } from '@/components/screen-header';
 import { Text, TextInput } from '@/components/text';
-import { colors } from '@/constants/colors';
+import { brand, colors } from '@/constants/colors';
 import { fonts } from '@/constants/fonts';
 import { sendMessage, type ChatRole } from '@/services/chat';
 
@@ -24,12 +25,77 @@ type UiChatMessage = {
   text: string;
 };
 
+type AssistantMood = 'happy' | 'confused';
+
+const MOOD_IMAGES = {
+  happy: require('@/assets/images/mgadokumentoatid.png'),
+  confused: require('@/assets/images/magpatulongsaai.png'),
+} as const;
+
+function getAssistantMood(text: string): AssistantMood {
+  const lower = text.trim().toLowerCase();
+
+  if (text.includes('?')) return 'confused';
+
+  const confusedPhrases = [
+    'hindi ko sigurado',
+    'hindi ko alam',
+    'pakilinaw',
+    'could you clarify',
+    'can you tell me',
+    'ano ang',
+    'saan ang',
+    'paano ang',
+    'bakit ang',
+  ];
+
+  if (confusedPhrases.some((phrase) => lower.includes(phrase))) return 'confused';
+
+  return 'happy';
+}
+
+function AssistantMessage({ text }: { text: string }) {
+  const mood = getAssistantMood(text);
+
+  return (
+    <View style={styles.assistantMessage}>
+      <Image
+        source={MOOD_IMAGES[mood]}
+        style={styles.assistantAvatar}
+        contentFit="contain"
+      />
+      <View style={[styles.bubble, styles.assistantBubble]}>
+        <Text style={[styles.bubbleText, styles.assistantBubbleText]}>{text}</Text>
+      </View>
+    </View>
+  );
+}
+
+function AssistantLoadingMessage() {
+  return (
+    <View style={styles.assistantMessage}>
+      <Image
+        source={MOOD_IMAGES.confused}
+        style={styles.assistantAvatar}
+        contentFit="contain"
+      />
+      <View style={[styles.bubble, styles.assistantBubble, styles.loadingBubble]}>
+        <ActivityIndicator size="small" color={brand.teal} />
+      </View>
+    </View>
+  );
+}
+
 function createMessage(role: ChatRole, text: string): UiChatMessage {
   return {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
     role,
     text,
   };
+}
+
+function pressableStyle(baseStyle: object, pressedStyle: object) {
+  return ({ pressed }: { pressed: boolean }) => [baseStyle, pressed && pressedStyle];
 }
 
 export default function AiAssistantScreen() {
@@ -90,39 +156,33 @@ export default function AiAssistantScreen() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}>
             {messages.length === 0 && !isLoading ? (
-              <Text style={styles.welcomeText}>
-                Paano kita matutulungan ngayon?
-              </Text>
+              <View style={styles.welcome}>
+                <Text style={styles.welcomeGreeting}>Kumusta!</Text>
+                <Text style={styles.welcomeText}>
+                  Paano kita matutulungan ngayon?
+                </Text>
+              </View>
             ) : (
-              messages.map((item) => (
-                <View
-                  key={item.id}
-                  style={[
-                    styles.messageRow,
-                    item.role === 'assistant' && styles.messageRowAssistant,
-                  ]}>
-                  <View
-                    style={[
-                      styles.bubble,
-                      item.role === 'user' ? styles.userBubble : styles.assistantBubble,
-                    ]}>
-                    <Text
-                      style={[
-                        styles.bubbleText,
-                        item.role === 'user' ? styles.userBubbleText : styles.assistantBubbleText,
-                      ]}>
-                      {item.text}
-                    </Text>
+              messages.map((item) =>
+                item.role === 'user' ? (
+                  <View key={item.id} style={styles.messageRow}>
+                    <View style={[styles.bubble, styles.userBubble]}>
+                      <Text style={[styles.bubbleText, styles.userBubbleText]}>
+                        {item.text}
+                      </Text>
+                    </View>
                   </View>
-                </View>
-              ))
+                ) : (
+                  <View key={item.id} style={styles.messageRowAssistant}>
+                    <AssistantMessage text={item.text} />
+                  </View>
+                ),
+              )
             )}
 
             {isLoading ? (
-              <View style={[styles.messageRow, styles.messageRowAssistant]}>
-                <View style={[styles.bubble, styles.assistantBubble, styles.loadingBubble]}>
-                  <ActivityIndicator size="small" color={colors.secondary} />
-                </View>
+              <View style={styles.messageRowAssistant}>
+                <AssistantLoadingMessage />
               </View>
             ) : null}
           </ScrollView>
@@ -143,42 +203,46 @@ export default function AiAssistantScreen() {
               <View style={styles.toolbar}>
                 <View style={styles.toolbarLeft}>
                   <Pressable
-                    style={styles.iconButton}
+                    style={pressableStyle(styles.iconButton, styles.iconButtonPressed)}
                     accessibilityLabel="Speech to text"
                     disabled={isLoading}
                     hitSlop={8}>
                     <SymbolView
                       name={{ ios: 'mic.fill', android: 'mic', web: 'mic' }}
                       size={22}
-                      tintColor={colors.secondary}
+                      tintColor={brand.teal}
                     />
                   </Pressable>
                   <Pressable
-                    style={styles.iconButton}
+                    style={pressableStyle(styles.iconButton, styles.iconButtonPressed)}
                     accessibilityLabel="Camera"
                     disabled={isLoading}
                     hitSlop={8}>
                     <SymbolView
                       name={{ ios: 'camera.fill', android: 'photo_camera', web: 'photo_camera' }}
                       size={22}
-                      tintColor={colors.secondary}
+                      tintColor={brand.teal}
                     />
                   </Pressable>
                   <Pressable
-                    style={styles.iconButton}
+                    style={pressableStyle(styles.iconButton, styles.iconButtonPressed)}
                     accessibilityLabel="Upload image"
                     disabled={isLoading}
                     hitSlop={8}>
                     <SymbolView
                       name={{ ios: 'photo.fill', android: 'image', web: 'image' }}
                       size={22}
-                      tintColor={colors.secondary}
+                      tintColor={brand.teal}
                     />
                   </Pressable>
                 </View>
 
                 <Pressable
-                  style={[styles.sendButton, !canSend && styles.sendButtonDisabled]}
+                  style={({ pressed }) => [
+                    styles.sendButton,
+                    !canSend && styles.sendButtonDisabled,
+                    pressed && canSend && styles.sendButtonPressed,
+                  ]}
                   accessibilityLabel="Send message"
                   disabled={!canSend}
                   onPress={handleSend}
@@ -197,6 +261,14 @@ export default function AiAssistantScreen() {
     </SafeAreaView>
   );
 }
+
+const cardShadow = {
+  shadowColor: brand.navy,
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.08,
+  shadowRadius: 8,
+  elevation: 3,
+} as const;
 
 const styles = StyleSheet.create({
   headerTitle: {
@@ -220,7 +292,7 @@ const styles = StyleSheet.create({
   },
   messagesContent: {
     flexGrow: 1,
-    gap: 12,
+    gap: 20,
     paddingTop: 16,
     paddingBottom: 8,
   },
@@ -229,35 +301,56 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
   },
+  welcome: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  welcomeGreeting: {
+    fontFamily: fonts.fredoka,
+    fontSize: 28,
+    color: brand.blue,
+  },
   welcomeText: {
-    fontSize: 18,
+    fontSize: 15,
     fontFamily: fonts.regular,
     color: colors.secondary,
     textAlign: 'center',
-    lineHeight: 26,
+    lineHeight: 22,
   },
   messageRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
   },
   messageRowAssistant: {
+    flexDirection: 'row',
     justifyContent: 'flex-start',
   },
+  assistantMessage: {
+    maxWidth: '85%',
+    alignItems: 'flex-start',
+  },
+  assistantAvatar: {
+    width: 80,
+    height: 80,
+    marginLeft: 4,
+  },
   bubble: {
-    maxWidth: '80%',
     paddingVertical: 10,
     paddingHorizontal: 14,
-    borderRadius: 18,
+    borderRadius: 16,
   },
   userBubble: {
+    maxWidth: '80%',
     borderBottomRightRadius: 4,
-    backgroundColor: colors.secondary,
+    backgroundColor: brand.teal,
   },
   assistantBubble: {
+    alignSelf: 'stretch',
     borderBottomLeftRadius: 4,
-    backgroundColor: colors.secondaryMuted,
+    backgroundColor: colors.primary,
     borderWidth: 1,
     borderColor: colors.secondaryBorder,
+    ...cardShadow,
   },
   loadingBubble: {
     paddingVertical: 14,
@@ -272,27 +365,28 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   assistantBubbleText: {
-    color: colors.secondary,
+    color: brand.navy,
   },
   composer: {
     paddingTop: 12,
   },
   inputBox: {
-    borderRadius: 20,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.secondary,
-    backgroundColor: colors.secondaryMuted,
+    borderColor: colors.secondaryBorder,
+    backgroundColor: colors.primary,
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 10,
     gap: 10,
+    ...cardShadow,
   },
   input: {
     minHeight: 44,
     maxHeight: 120,
     fontSize: 16,
     fontFamily: fonts.regular,
-    color: colors.secondary,
+    color: brand.navy,
     backgroundColor: 'transparent',
   },
   toolbar: {
@@ -308,19 +402,28 @@ const styles = StyleSheet.create({
   iconButton: {
     width: 40,
     height: 40,
-    borderRadius: 999,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(1, 154, 143, 0.08)',
+  },
+  iconButtonPressed: {
+    opacity: 0.75,
+    transform: [{ scale: 0.95 }],
   },
   sendButton: {
     width: 40,
     height: 40,
-    borderRadius: 999,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.secondary,
+    backgroundColor: brand.teal,
   },
   sendButtonDisabled: {
     backgroundColor: colors.secondaryBorder,
+  },
+  sendButtonPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.95 }],
   },
 });

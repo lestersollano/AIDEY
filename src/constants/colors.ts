@@ -5,3 +5,9 @@ export const colors = {
   secondaryBorder: 'rgba(107, 124, 168, 0.2)',
   secondaryPlaceholder: 'rgba(107, 124, 168, 0.5)',
 } as const;
+
+export const brand = {
+  navy: '#00166a',
+  blue: '#005ade',
+  teal: '#019a8f',
+} as const;

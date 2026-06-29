@@ -6,10 +6,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AideyWordmark } from "@/components/aidey-wordmark";
 import { Text } from "@/components/text";
-import { colors } from "@/constants/colors";
+import { brand, colors } from "@/constants/colors";
+import { fonts } from "@/constants/fonts";
 
 function pressableStyle(baseStyle: object, pressedStyle: object) {
-    return ({ pressed }: { pressed: boolean }) => [baseStyle, pressed && pressedStyle];
+    return ({ pressed }: { pressed: boolean }) => [
+        baseStyle,
+        pressed && pressedStyle,
+    ];
 }
 
 export default function HomeScreen() {
@@ -18,21 +22,37 @@ export default function HomeScreen() {
             <View style={styles.content}>
                 <View style={styles.header}>
                     <Pressable
-                        style={pressableStyle(styles.headerButton, styles.headerButtonPressed)}
-                        accessibilityLabel="Menu">
+                        style={pressableStyle(
+                            styles.headerButton,
+                            styles.headerButtonPressed,
+                        )}
+                        accessibilityLabel="Menu"
+                    >
                         <SymbolView
-                            name={{ ios: "line.3.horizontal", android: "menu", web: "menu" }}
+                            name={{
+                                ios: "line.3.horizontal",
+                                android: "menu",
+                                web: "menu",
+                            }}
                             size={24}
                             tintColor={colors.secondary}
                         />
                     </Pressable>
                     <AideyWordmark style={styles.title} />
                     <Pressable
-                        style={pressableStyle(styles.headerButton, styles.headerButtonPressed)}
+                        style={pressableStyle(
+                            styles.headerButton,
+                            styles.headerButtonPressed,
+                        )}
                         accessibilityLabel="Settings"
-                        onPress={() => router.push("/settings")}>
+                        onPress={() => router.push("/settings")}
+                    >
                         <SymbolView
-                            name={{ ios: "gearshape", android: "settings", web: "settings" }}
+                            name={{
+                                ios: "gearshape",
+                                android: "settings",
+                                web: "settings",
+                            }}
                             size={24}
                             tintColor={colors.secondary}
                         />
@@ -41,11 +61,20 @@ export default function HomeScreen() {
 
                 <View style={styles.buttons}>
                     <Pressable
-                        style={pressableStyle(styles.button, styles.buttonPressed)}
-                        android_ripple={{ color: colors.secondaryBorder }}
-                        onPress={() => router.push("/documents")}>
+                        style={pressableStyle(
+                            styles.button,
+                            styles.buttonPressed,
+                        )}
+                        android_ripple={{ color: "rgba(0, 22, 106, 0.12)" }}
+                        onPress={() => router.push("/documents")}
+                    >
                         <View style={styles.buttonRow}>
-                            <View style={styles.buttonMedia}>
+                            <View
+                                style={[
+                                    styles.buttonMedia,
+                                    styles.buttonMediaDocuments,
+                                ]}
+                            >
                                 <Image
                                     source={require("@/assets/images/mgadokumentoatid.png")}
                                     style={styles.buttonIcon}
@@ -53,16 +82,39 @@ export default function HomeScreen() {
                                 />
                             </View>
                             <View style={styles.buttonTextWrapper}>
-                                <Text style={styles.buttonText}>Mga Dokumento at ID</Text>
+                                <Text style={styles.buttonTextDocuments}>
+                                    Mga Dokumento at ID
+                                </Text>
+                                <Text style={styles.buttonSubtext}>
+                                    Tingnan at i-upload ang mga ID
+                                </Text>
                             </View>
+                            <SymbolView
+                                name={{
+                                    ios: "chevron.right",
+                                    android: "chevron_right",
+                                    web: "chevron_right",
+                                }}
+                                size={18}
+                                tintColor={brand.navy}
+                            />
                         </View>
                     </Pressable>
                     <Pressable
-                        style={pressableStyle(styles.button, styles.buttonPressed)}
-                        android_ripple={{ color: colors.secondaryBorder }}
-                        onPress={() => router.push("/ai-assistant")}>
+                        style={pressableStyle(
+                            styles.button,
+                            styles.buttonPressed,
+                        )}
+                        android_ripple={{ color: "rgba(1, 154, 143, 0.12)" }}
+                        onPress={() => router.push("/ai-assistant")}
+                    >
                         <View style={styles.buttonRow}>
-                            <View style={styles.buttonMedia}>
+                            <View
+                                style={[
+                                    styles.buttonMedia,
+                                    styles.buttonMediaAi,
+                                ]}
+                            >
                                 <Image
                                     source={require("@/assets/images/magpatulongsaai.png")}
                                     style={styles.buttonIcon}
@@ -70,35 +122,31 @@ export default function HomeScreen() {
                                 />
                             </View>
                             <View style={styles.buttonTextWrapper}>
-                                <Text style={styles.buttonText}>Magpatulong sa AI</Text>
+                                <Text style={styles.buttonTextAi}>
+                                    Magpatulong sa AI
+                                </Text>
+                                <Text style={styles.buttonSubtextAi}>
+                                    Magtanong at humingi ng tulong
+                                </Text>
                             </View>
+                            <SymbolView
+                                name={{
+                                    ios: "chevron.right",
+                                    android: "chevron_right",
+                                    web: "chevron_right",
+                                }}
+                                size={18}
+                                tintColor={brand.teal}
+                            />
                         </View>
                     </Pressable>
                 </View>
 
-                <View style={styles.middle}>
-                    <View style={styles.profileWireframe}>
-                        <View style={styles.photoPlaceholder} />
-
-                        <View style={styles.personalInfo}>
-                            <View style={styles.infoField}>
-                                <Text style={styles.infoLabel}>Full Name</Text>
-                                <View style={styles.infoWire} />
-                            </View>
-                            <View style={styles.infoField}>
-                                <Text style={styles.infoLabel}>Birthday</Text>
-                                <View style={styles.infoWire} />
-                            </View>
-                            <View style={styles.infoField}>
-                                <Text style={styles.infoLabel}>Address</Text>
-                                <View style={styles.infoWire} />
-                            </View>
-                            <View style={styles.infoField}>
-                                <Text style={styles.infoLabel}>Contact</Text>
-                                <View style={styles.infoWire} />
-                            </View>
-                        </View>
-                    </View>
+                <View style={styles.hero}>
+                    <Text style={styles.greeting}>Kumusta!</Text>
+                    <Text style={styles.tagline}>
+                        Ako si Aidey, ang iyong Gabay sa Dokumento at ID! Piliin ang kailangan mo sa mga opsyon sa itaas.
+                    </Text>
                 </View>
             </View>
 
@@ -142,82 +190,92 @@ const styles = StyleSheet.create({
         fontSize: 20,
         textAlign: "center",
     },
-    middle: {
+    hero: {
         flex: 1,
         justifyContent: "center",
-    },
-    profileWireframe: {
-        flexDirection: "row",
         alignItems: "center",
-        gap: 16,
+        paddingHorizontal: 16,
+        gap: 8,
     },
-    photoPlaceholder: {
-        width: 96,
-        aspectRatio: 1,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: colors.secondaryBorder,
+    greeting: {
+        fontFamily: fonts.fredoka,
+        fontSize: 28,
+        color: brand.blue,
     },
-    personalInfo: {
-        flex: 1,
-        gap: 10,
-    },
-    infoField: {
-        gap: 4,
-    },
-    infoLabel: {
-        fontSize: 12,
+    tagline: {
+        fontSize: 15,
         color: colors.secondary,
-    },
-    infoWire: {
-        height: 14,
-        borderRadius: 4,
-        borderWidth: 1,
-        borderColor: colors.secondaryBorder,
+        textAlign: "center",
+        lineHeight: 22,
     },
     buttons: {
         marginTop: 32,
-        gap: 12,
+        gap: 14,
         alignSelf: "stretch",
     },
     button: {
         width: "100%",
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-        borderRadius: 20,
-        backgroundColor: colors.secondaryMuted,
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        borderRadius: 16,
+        backgroundColor: colors.primary,
         borderWidth: 1,
         borderColor: colors.secondaryBorder,
+        shadowColor: brand.navy,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 3,
     },
     buttonPressed: {
-        opacity: 0.75,
-        backgroundColor: colors.secondaryBorder,
+        opacity: 0.85,
+        transform: [{ scale: 0.98 }],
     },
     buttonRow: {
         flexDirection: "row",
-        justifyContent: "space-between",
         alignItems: "center",
+        gap: 12,
         width: "100%",
     },
     buttonMedia: {
-        width: 75,
-        height: 75,
-        justifyContent: "center",
-        alignItems: "center",
+        width: 64,
+        height: 64,
+        borderRadius: 14,
+        overflow: "hidden",
+    },
+    buttonMediaDocuments: {
+        backgroundColor: "rgba(0, 22, 106, 0.06)",
+    },
+    buttonMediaAi: {
+        backgroundColor: "rgba(1, 154, 143, 0.08)",
     },
     buttonIcon: {
-        width: 75,
-        height: 75,
+        width: 64,
+        height: 64,
     },
     buttonTextWrapper: {
         flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
+        gap: 2,
     },
-    buttonText: {
-        color: colors.secondary,
+    buttonTextDocuments: {
+        color: brand.navy,
         fontSize: 16,
-        textAlign: "center",
+        fontFamily: fonts.semiBold,
+    },
+    buttonTextAi: {
+        color: brand.teal,
+        fontSize: 16,
+        fontFamily: fonts.semiBold,
+    },
+    buttonSubtext: {
+        fontSize: 13,
+        color: "rgba(0, 22, 106, 0.55)",
+        fontFamily: fonts.regular,
+    },
+    buttonSubtextAi: {
+        fontSize: 13,
+        color: "rgba(1, 154, 143, 0.65)",
+        fontFamily: fonts.regular,
     },
     bottomImage: {
         width: "100%",

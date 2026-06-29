@@ -1,27 +1,41 @@
+import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ScreenHeader } from '@/components/screen-header';
 import { IdUploadField } from '@/components/id-upload-field';
-import { TextInput } from '@/components/text';
-import { colors } from '@/constants/colors';
+import { Text, TextInput } from '@/components/text';
+import { brand, colors } from '@/constants/colors';
+import { DOCUMENTS } from '@/constants/documents';
 import { fonts } from '@/constants/fonts';
+import { filterByFuzzyMatch } from '@/utils/fuzzy-match';
+
+function pressableStyle(baseStyle: object, pressedStyle: object) {
+  return ({ pressed }: { pressed: boolean }) => [baseStyle, pressed && pressedStyle];
+}
 
 export default function DocumentsScreen() {
   const [query, setQuery] = useState('');
 
+  const filteredDocuments = useMemo(
+    () => filterByFuzzyMatch(DOCUMENTS, query, (document) => document.label),
+    [query],
+  );
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScreenHeader title="Mga Dokumento at ID" />
+      <ScreenHeader
+        title={<Text style={styles.headerTitle}>Mga Dokumento at ID</Text>}
+      />
 
       <View style={styles.searchRow}>
         <View style={styles.searchBar}>
           <SymbolView
             name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }}
             size={20}
-            tintColor={colors.secondary}
+            tintColor={brand.navy}
           />
           <TextInput
             style={styles.searchInput}
@@ -32,11 +46,13 @@ export default function DocumentsScreen() {
             returnKeyType="search"
           />
         </View>
-        <Pressable style={styles.speechButton} accessibilityLabel="Speech to text">
+        <Pressable
+          style={pressableStyle(styles.speechButton, styles.speechButtonPressed)}
+          accessibilityLabel="Speech to text">
           <SymbolView
             name={{ ios: 'mic.fill', android: 'mic', web: 'mic' }}
             size={22}
-            tintColor={colors.secondary}
+            tintColor={brand.navy}
           />
         </Pressable>
       </View>
@@ -51,15 +67,30 @@ export default function DocumentsScreen() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
-          <IdUploadField label="National ID/Philsys ID" />
-          <IdUploadField label="Senior Citizen ID" />
-          <IdUploadField label="Solo Parent ID" />
-          <IdUploadField label="PWD ID" />
+          {filteredDocuments.length === 0 ? (
+            <Text style={styles.emptyState}>Walang nahanap na dokumento.</Text>
+          ) : (
+            filteredDocuments.map((document) => (
+              <IdUploadField
+                key={document.id}
+                label={document.label}
+                onPress={() => router.push(`/documents/${document.id}`)}
+              />
+            ))
+          )}
         </ScrollView>
       </View>
     </SafeAreaView>
   );
 }
+
+const cardShadow = {
+  shadowColor: brand.navy,
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.08,
+  shadowRadius: 8,
+  elevation: 3,
+} as const;
 
 const styles = StyleSheet.create({
   container: {
@@ -67,6 +98,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     paddingHorizontal: 24,
     paddingTop: 16,
+  },
+  headerTitle: {
+    fontSize: 17,
+    fontFamily: fonts.semiBold,
+    color: brand.navy,
+    textAlign: 'center',
   },
   searchRow: {
     flexDirection: 'row',
@@ -84,26 +121,34 @@ const styles = StyleSheet.create({
     height: 48,
     paddingHorizontal: 16,
     gap: 10,
-    borderRadius: 999,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.secondary,
+    borderColor: colors.secondaryBorder,
+    backgroundColor: colors.primary,
+    ...cardShadow,
   },
   searchInput: {
     flex: 1,
     height: '100%',
     fontSize: 16,
     fontFamily: fonts.regular,
-    color: colors.secondary,
+    color: brand.navy,
     backgroundColor: 'transparent',
   },
   speechButton: {
     width: 48,
     height: 48,
-    borderRadius: 999,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.secondary,
+    borderColor: colors.secondaryBorder,
+    backgroundColor: colors.primary,
+    ...cardShadow,
+  },
+  speechButtonPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
   },
   scrollShadowClip: {
     overflow: 'hidden',
@@ -114,9 +159,9 @@ const styles = StyleSheet.create({
   scrollTopShadow: {
     height: 1,
     backgroundColor: colors.primary,
-    shadowColor: colors.secondary,
+    shadowColor: brand.navy,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.24,
+    shadowOpacity: 0.12,
     shadowRadius: 8,
     elevation: 8,
   },
@@ -129,9 +174,16 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    gap: 24,
+    gap: 12,
     paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingTop: 8,
     paddingBottom: 24,
+  },
+  emptyState: {
+    paddingTop: 32,
+    fontSize: 16,
+    fontFamily: fonts.regular,
+    color: colors.secondaryPlaceholder,
+    textAlign: 'center',
   },
 });
