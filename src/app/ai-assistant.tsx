@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -18,6 +19,10 @@ import { Text, TextInput } from '@/components/text';
 import { brand, colors } from '@/constants/colors';
 import { fonts } from '@/constants/fonts';
 import { sendMessage, type ChatRole } from '@/services/chat';
+import {
+  hasValidInternetConnection,
+  markPendingInternetError,
+} from '@/utils/internet-connection';
 
 type UiChatMessage = {
   id: string;
@@ -28,8 +33,8 @@ type UiChatMessage = {
 type AssistantMood = 'happy' | 'confused';
 
 const MOOD_IMAGES = {
-  happy: require('@/assets/images/mgadokumentoatid.png'),
-  confused: require('@/assets/images/magpatulongsaai.png'),
+  happy: require('@/assets/images/mascot/cropped/mgadokumentoatid.png'),
+  confused: require('@/assets/images/mascot/cropped/magpatulongsaai.png'),
 } as const;
 
 function getAssistantMood(text: string): AssistantMood {
@@ -104,7 +109,32 @@ export default function AiAssistantScreen() {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<UiChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [connectionChecked, setConnectionChecked] = useState(false);
   const canSend = message.trim().length > 0 && !isLoading;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkConnectionOnce() {
+      const isConnected = await hasValidInternetConnection();
+
+      if (cancelled) return;
+
+      if (!isConnected) {
+        markPendingInternetError();
+        router.back();
+        return;
+      }
+
+      setConnectionChecked(true);
+    }
+
+    checkConnectionOnce();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function scrollToBottom() {
     requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
@@ -133,6 +163,19 @@ export default function AiAssistantScreen() {
       setIsLoading(false);
       scrollToBottom();
     }
+  }
+
+  if (!connectionChecked) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <ScreenHeader
+          title={<AideyWordmark style={styles.headerTitle} suffix=" AI" />}
+        />
+        <View style={styles.connectionCheck}>
+          <ActivityIndicator size="large" color={brand.teal} />
+        </View>
+      </SafeAreaView>
+    );
   }
 
   return (
@@ -283,6 +326,11 @@ const styles = StyleSheet.create({
   },
   flex: {
     flex: 1,
+  },
+  connectionCheck: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   content: {
     flex: 1,

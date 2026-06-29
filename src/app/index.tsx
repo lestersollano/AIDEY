@@ -1,13 +1,16 @@
 import { Image } from "expo-image";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { SymbolView } from "expo-symbols";
+import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AideyWordmark } from "@/components/aidey-wordmark";
+import { InternetErrorModal } from "@/components/internet-error-modal";
 import { Text } from "@/components/text";
 import { brand, colors } from "@/constants/colors";
 import { fonts } from "@/constants/fonts";
+import { consumePendingInternetError } from "@/utils/internet-connection";
 
 function pressableStyle(baseStyle: object, pressedStyle: object) {
     return ({ pressed }: { pressed: boolean }) => [
@@ -17,8 +20,22 @@ function pressableStyle(baseStyle: object, pressedStyle: object) {
 }
 
 export default function HomeScreen() {
+    const [showInternetError, setShowInternetError] = useState(false);
+
+    useFocusEffect(
+        useCallback(() => {
+            if (consumePendingInternetError()) {
+                setShowInternetError(true);
+            }
+        }, []),
+    );
+
     return (
         <SafeAreaView style={styles.container}>
+            <InternetErrorModal
+                visible={showInternetError}
+                onDismiss={() => setShowInternetError(false)}
+            />
             <View style={styles.content}>
                 <View style={styles.header}>
                     <Pressable
@@ -76,7 +93,7 @@ export default function HomeScreen() {
                                 ]}
                             >
                                 <Image
-                                    source={require("@/assets/images/mgadokumentoatid.png")}
+                                    source={require("@/assets/images/mascot/cropped/mgadokumentoatid.png")}
                                     style={styles.buttonIcon}
                                     contentFit="contain"
                                 />
@@ -116,7 +133,7 @@ export default function HomeScreen() {
                                 ]}
                             >
                                 <Image
-                                    source={require("@/assets/images/magpatulongsaai.png")}
+                                    source={require("@/assets/images/mascot/cropped/magpatulongsaai.png")}
                                     style={styles.buttonIcon}
                                     contentFit="contain"
                                 />
@@ -143,15 +160,16 @@ export default function HomeScreen() {
                 </View>
 
                 <View style={styles.hero}>
-                    <Text style={styles.greeting}>Kumusta!</Text>
+                    <AideyWordmark style={styles.greeting} />
                     <Text style={styles.tagline}>
-                        Ako si Aidey, ang iyong Gabay sa Dokumento at ID! Piliin ang kailangan mo sa mga opsyon sa itaas.
+                        Ako si Aidey, ang iyong Gabay sa Dokumento at ID! Piliin
+                        ang kailangan mo sa mga opsyon sa itaas.
                     </Text>
                 </View>
             </View>
 
             <Image
-                source={require("@/assets/images/mainmenu.png")}
+                source={require("@/assets/images/mascot/cropped/mainmenu.png")}
                 style={styles.bottomImage}
                 contentFit="contain"
             />
@@ -198,9 +216,8 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     greeting: {
-        fontFamily: fonts.fredoka,
         fontSize: 28,
-        color: brand.blue,
+        textAlign: "center",
     },
     tagline: {
         fontSize: 15,
