@@ -67,7 +67,7 @@ type UiChatMessage = {
 };
 
 const MOOD_IMAGES = {
-  confused: require('@/assets/images/mascot/cropped/magpatulongsaai.png'),
+  thinking: require('@/assets/images/mascot/mood/thinking.png'),
 } as const;
 
 function createMessage(
@@ -93,7 +93,7 @@ function AssistantLoadingMessage() {
   return (
     <View style={styles.assistantLoading}>
       <Image
-        source={MOOD_IMAGES.confused}
+        source={MOOD_IMAGES.thinking}
         style={styles.loadingAvatar}
         contentFit="contain"
       />

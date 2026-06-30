@@ -9,15 +9,68 @@ import { fonts } from '@/constants/fonts';
 import type { AideyReply, Suggestion } from '@/types/aidey-response';
 import type { UserCoordinates } from '@/utils/maps';
 
-type AssistantMood = 'happy' | 'confused';
+type AssistantMood =
+  | 'happy'
+  | 'confused'
+  | 'celebrating'
+  | 'apologetic'
+  | 'reassuring';
 
 const MOOD_IMAGES = {
-  happy: require('@/assets/images/mascot/cropped/mgadokumentoatid.png'),
-  confused: require('@/assets/images/mascot/cropped/magpatulongsaai.png'),
+  happy: require('@/assets/images/mascot/mood/happy.png'),
+  confused: require('@/assets/images/mascot/mood/confused.png'),
+  celebrating: require('@/assets/images/mascot/mood/celebrating.png'),
+  apologetic: require('@/assets/images/mascot/mood/apologetic.png'),
+  reassuring: require('@/assets/images/mascot/mood/reassuring.png'),
 } as const;
 
 function getAssistantMood(text: string): AssistantMood {
   const lower = text.trim().toLowerCase();
+
+  const apologeticPhrases = [
+    'pasensya',
+    'paumanhin',
+    'sorry',
+    'hindi ko mahanap',
+    'hindi ko makita',
+    'walang nahanap',
+    'hindi available',
+    'hindi po namin',
+    'error',
+  ];
+
+  if (apologeticPhrases.some((phrase) => lower.includes(phrase))) {
+    return 'apologetic';
+  }
+
+  const celebratingPhrases = [
+    'congrat',
+    'salamat',
+    'tapos na',
+    'nakumpleto',
+    'success',
+    'natagpuan',
+    'andito na',
+    'malapit ka na',
+  ];
+
+  if (celebratingPhrases.some((phrase) => lower.includes(phrase))) {
+    return 'celebrating';
+  }
+
+  const reassuringPhrases = [
+    'huwag kang mag-alala',
+    'okay lang',
+    'gagabayan',
+    'tutulungan ka',
+    'direksyon',
+    'punta sa',
+    'malapit na opisina',
+  ];
+
+  if (reassuringPhrases.some((phrase) => lower.includes(phrase))) {
+    return 'reassuring';
+  }
 
   if (text.includes('?')) return 'confused';
 
