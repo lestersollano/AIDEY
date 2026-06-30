@@ -64,6 +64,7 @@ type UiChatMessage = {
   text: string;
   structured?: AideyReply;
   model?: string;
+  isArrivalCheck?: boolean;
 };
 
 const MOOD_IMAGES = {
@@ -75,6 +76,7 @@ function createMessage(
   text: string,
   structured?: AideyReply,
   model?: string,
+  extra?: Partial<UiChatMessage>,
 ): UiChatMessage {
   return {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
@@ -82,6 +84,7 @@ function createMessage(
     text,
     structured,
     model,
+    ...extra,
   };
 }
 
@@ -121,6 +124,7 @@ export default function AiAssistantScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [connectionChecked, setConnectionChecked] = useState(false);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
+  const [finishedTaskIds, setFinishedTaskIds] = useState<Set<string>>(new Set());
   const canSend = message.trim().length > 0 && !isLoading;
   const mapIsRelevant = isMapRelevantInConversation(messages);
   const activeMapDestination = getActiveMapDestination(messages);
@@ -235,7 +239,9 @@ export default function AiAssistantScreen() {
 
       setMessages((current) => [
         ...current,
-        createMessage('assistant', onSiteReply.message, onSiteReply, reply.model),
+        createMessage('assistant', onSiteReply.message, onSiteReply, reply.model, {
+          isArrivalCheck: true,
+        }),
       ]);
     } catch (error) {
       proximityTriggeredRef.current = null;
@@ -361,6 +367,18 @@ export default function AiAssistantScreen() {
     openMapDirections(activeMapDestination, trackedUserLocation);
   }
 
+  function handleFinishTask(messageId: string) {
+    setFinishedTaskIds((current) => {
+      const next = new Set(current);
+      next.add(messageId);
+      return next;
+    });
+  }
+
+  function handleAddToGallery() {
+    // Gallery is not functional yet — adding documents will be wired up later.
+  }
+
   async function handleSuggestionSelect(suggestion: Suggestion) {
     if (isLoading) return;
 
@@ -464,6 +482,11 @@ export default function AiAssistantScreen() {
                             ? (suggestion) => void handleSuggestionSelect(suggestion)
                             : undefined
                         }
+                        showTaskCompletion={!!item.isArrivalCheck && isLatestAssistant}
+                        taskFinished={finishedTaskIds.has(item.id)}
+                        documentLabel={sessionDocumentLabel}
+                        onFinishTask={() => handleFinishTask(item.id)}
+                        onAddToGallery={handleAddToGallery}
                       />
                     ) : (
                       <View style={[styles.bubble, styles.assistantBubble]}>

@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { MapActionCard } from '@/components/map-action-card';
 import { SuggestedReplies } from '@/components/suggested-replies';
+import { TaskCompletionCard } from '@/components/task-completion-card';
 import { Text } from '@/components/text';
 import { brand, colors } from '@/constants/colors';
 import { fonts } from '@/constants/fonts';
@@ -97,6 +98,11 @@ type AssistantStepMessageProps = {
   suggestionsDisabled?: boolean;
   userLocation?: UserCoordinates;
   onSelectSuggestion?: (suggestion: Suggestion) => void;
+  showTaskCompletion?: boolean;
+  taskFinished?: boolean;
+  documentLabel?: string;
+  onFinishTask?: () => void;
+  onAddToGallery?: () => void;
 };
 
 export function AssistantStepMessage({
@@ -105,6 +111,11 @@ export function AssistantStepMessage({
   suggestionsDisabled = false,
   userLocation,
   onSelectSuggestion,
+  showTaskCompletion = false,
+  taskFinished = false,
+  documentLabel,
+  onFinishTask,
+  onAddToGallery,
 }: AssistantStepMessageProps) {
   const mood = getAssistantMood(reply.message);
   const stepLabel = reply.step
@@ -145,6 +156,15 @@ export function AssistantStepMessage({
             onSelect={onSelectSuggestion}
           />
         </View>
+      ) : null}
+
+      {showTaskCompletion && onFinishTask && onAddToGallery ? (
+        <TaskCompletionCard
+          documentLabel={documentLabel}
+          isFinished={taskFinished}
+          onFinish={onFinishTask}
+          onAddToGallery={onAddToGallery}
+        />
       ) : null}
     </View>
   );

@@ -51,6 +51,24 @@ export function DocumentWalaScreen({ title }: DocumentWalaScreenProps) {
           }>
           <Text style={styles.buttonText}>Magpatulong sa Aidey AI</Text>
         </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.secondaryButton,
+            pressed && styles.secondaryButtonPressed,
+          ]}
+          accessibilityRole="button"
+          onPress={() =>
+            router.push({
+              pathname: '/ai-assistant',
+              params: {
+                prompt: getDocumentHelpPrompt(title),
+                documentLabel: title,
+              },
+            })
+          }>
+          <Text style={styles.secondaryButtonText}>Sundin na lang ang hakbang-hakbang</Text>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
@@ -124,5 +142,31 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: fonts.semiBold,
     color: colors.primary,
+  },
+  secondaryButton: {
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 320,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.secondaryBorder,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    shadowColor: brand.navy,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  secondaryButtonPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
+  },
+  secondaryButtonText: {
+    fontSize: 16,
+    fontFamily: fonts.semiBold,
+    color: brand.navy,
   },
 });
