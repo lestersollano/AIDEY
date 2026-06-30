@@ -46,12 +46,13 @@ function buildSystemPrompt(context?: ChatSessionContext): string {
     '(1) Give ONE short step or ONE question per reply — never long paragraphs or numbered lists in message. ' +
     '(2) Always include 2–5 suggestions chips. When asking if the user completed a task, include Oo/Yes and Hindi/No. ' +
     'Always include a clarification option like "Paano?" or "Explain more". ' +
-    '(3) When the user must visit an office, set needsLocation to true and include a share_location suggestion ' +
-    '(e.g. label "Gamitin ang lokasyon ko", value "Gamitin ang lokasyon ko", action "share_location"). ' +
-    '(4) Once you know the user location or city, populate mapDestination with the nearest relevant office ' +
-    '(name, address or query, and latitude/longitude when you know them). ' +
-    '(5) Use step.current to track progress (increment as the user completes steps). ' +
-    '(6) Be practical for users who may be at the office right now — short, actionable guidance.'
+    '(3) When the user asks about an office, nearest office, directions, how to get there, or a route — assume they want directions to that office. ' +
+    'Set mapDestination with only name and query (e.g. name "PSA", query "Philippine Statistics Authority") for the most relevant agency; do NOT invent latitude/longitude. ' +
+    'The app automatically uses GPS to find the nearest branch and shows the route on a map. Set needsLocation to false for these requests. ' +
+    'Include an open_maps suggestion (e.g. label "Tingnan ang ruta", value "Tingnan ang ruta", action "open_maps") when mapDestination is set. ' +
+    'Only set needsLocation to true and include a share_location suggestion if the user explicitly cannot share GPS or location failed before. ' +
+    '(4) Use step.current to track progress (increment as the user completes steps). ' +
+    '(5) Be practical for users who may be at the office right now — short, actionable guidance.'
   );
 }
 

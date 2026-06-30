@@ -109,7 +109,6 @@ const styles = StyleSheet.create({
   container: {
     maxWidth: '92%',
     alignSelf: 'flex-start',
-    gap: 10,
   },
   header: {
     flexDirection: 'row',
@@ -158,6 +157,7 @@ const styles = StyleSheet.create({
     color: brand.navy,
   },
   suggestions: {
-    paddingLeft: 4,
+    alignItems: 'flex-start',
+    marginTop: 10,
   },
 });

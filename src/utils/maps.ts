@@ -5,36 +5,6 @@ export type UserCoordinates = {
   longitude: number;
 };
 
-export function buildMapsSearchUrl(destination: MapDestination): string {
-  if (destination.latitude != null && destination.longitude != null) {
-    return `https://www.google.com/maps/search/?api=1&query=${destination.latitude},${destination.longitude}`;
-  }
-
-  const query = destination.query ?? destination.address ?? destination.name;
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
-}
-
-export function buildMapsDirectionsUrl(
-  destination: MapDestination,
-  origin?: UserCoordinates,
-): string {
-  let destinationParam: string;
-  if (destination.latitude != null && destination.longitude != null) {
-    destinationParam = `${destination.latitude},${destination.longitude}`;
-  } else {
-    destinationParam = encodeURIComponent(
-      destination.query ?? destination.address ?? destination.name,
-    );
-  }
-
-  const params = new URLSearchParams({ api: '1', destination: destinationParam });
-  if (origin) {
-    params.set('origin', `${origin.latitude},${origin.longitude}`);
-  }
-
-  return `https://www.google.com/maps/dir/?${params.toString()}`;
-}
-
 export function getMapRegion(
   destination: MapDestination,
   userLocation?: UserCoordinates,

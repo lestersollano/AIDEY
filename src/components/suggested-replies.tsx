@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/text';
 import { brand, colors } from '@/constants/colors';
@@ -8,22 +8,20 @@ import type { Suggestion } from '@/types/aidey-response';
 type SuggestedRepliesProps = {
   suggestions: Suggestion[];
   disabled?: boolean;
+  align?: 'start' | 'center';
   onSelect: (suggestion: Suggestion) => void;
 };
 
 export function SuggestedReplies({
   suggestions,
   disabled = false,
+  align = 'start',
   onSelect,
 }: SuggestedRepliesProps) {
   if (suggestions.length === 0) return null;
 
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      keyboardShouldPersistTaps="handled"
-      contentContainerStyle={styles.content}>
+    <View style={[styles.content, align === 'center' && styles.contentCentered]}>
       {suggestions.map((suggestion, index) => (
         <Pressable
           key={`${suggestion.label}-${index}`}
@@ -41,14 +39,17 @@ export function SuggestedReplies({
           </Text>
         </Pressable>
       ))}
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   content: {
     gap: 8,
-    paddingHorizontal: 2,
+    alignItems: 'flex-start',
+  },
+  contentCentered: {
+    alignItems: 'center',
   },
   chip: {
     minHeight: 44,
@@ -73,6 +74,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: fonts.semiBold,
     color: brand.teal,
+    textAlign: 'center',
   },
   chipTextDisabled: {
     color: colors.secondary,

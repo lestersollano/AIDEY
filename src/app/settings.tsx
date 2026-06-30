@@ -1,17 +1,23 @@
+import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
+import type { ComponentProps } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ScreenHeader } from '@/components/screen-header';
 import { Text } from '@/components/text';
+import { useAuth } from '@/contexts/auth-context';
 import { brand, colors } from '@/constants/colors';
 import { fonts } from '@/constants/fonts';
+
+type SymbolViewName = ComponentProps<typeof SymbolView>['name'];
+type PlatformSymbolName = Extract<SymbolViewName, { ios?: unknown }>;
 
 type SettingsOption = {
   id: string;
   label: string;
   subtitle?: string;
-  icon: { ios: string; android: string; web: string };
+  icon: PlatformSymbolName;
 };
 
 const generalOptions: SettingsOption[] = [
@@ -51,12 +57,18 @@ const supportOptions: SettingsOption[] = [
   },
 ];
 
-function SettingsRow({ option }: { option: SettingsOption }) {
+function SettingsRow({
+  option,
+  onPress,
+}: {
+  option: SettingsOption;
+  onPress?: () => void;
+}) {
   return (
     <Pressable
       style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
       accessibilityLabel={option.label}
-      onPress={() => {}}>
+      onPress={onPress}>
       <View style={styles.rowIcon}>
         <SymbolView name={option.icon} size={20} tintColor={brand.navy} />
       </View>
@@ -73,7 +85,15 @@ function SettingsRow({ option }: { option: SettingsOption }) {
   );
 }
 
-function SettingsSection({ title, options }: { title: string; options: SettingsOption[] }) {
+function SettingsSection({
+  title,
+  options,
+  onOptionPress,
+}: {
+  title: string;
+  options: SettingsOption[];
+  onOptionPress?: (option: SettingsOption) => void;
+}) {
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -81,7 +101,10 @@ function SettingsSection({ title, options }: { title: string; options: SettingsO
         {options.map((option, index) => (
           <View key={option.id}>
             {index > 0 ? <View style={styles.divider} /> : null}
-            <SettingsRow option={option} />
+            <SettingsRow
+              option={option}
+              onPress={onOptionPress ? () => onOptionPress(option) : undefined}
+            />
           </View>
         ))}
       </View>
@@ -90,6 +113,23 @@ function SettingsSection({ title, options }: { title: string; options: SettingsO
 }
 
 export default function SettingsScreen() {
+  const { user } = useAuth();
+
+  const generalOptionsWithAccount: SettingsOption[] = generalOptions.map((option) =>
+    option.id === 'account'
+      ? {
+          ...option,
+          subtitle: user?.email ?? 'Mag-sign in',
+        }
+      : option,
+  );
+
+  function handleOptionPress(option: SettingsOption) {
+    if (option.id === 'account') {
+      router.push('/account');
+    }
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScreenHeader
@@ -101,7 +141,11 @@ export default function SettingsScreen() {
           style={styles.scrollArea}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}>
-          <SettingsSection title="Pangkalahatan" options={generalOptions} />
+          <SettingsSection
+            title="Pangkalahatan"
+            options={generalOptionsWithAccount}
+            onOptionPress={handleOptionPress}
+          />
           <SettingsSection title="Suporta" options={supportOptions} />
         </ScrollView>
       </View>

@@ -4,11 +4,11 @@
     "slug": "aidey",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/LOGO.png",
     "scheme": "aidey",
     "userInterfaceStyle": "light",
     "ios": {
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/LOGO.png",
       "bundleIdentifier": "com.glak.aidey"
     },
     "androidStatusBar": {
@@ -18,17 +18,16 @@
     },
     "android": {
       "package": "com.glak.aidey",
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#208AEF",
+        "foregroundImage": "./assets/LOGO.png"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/LOGO.png"
     },
     "plugins": [
       "expo-dev-client",
@@ -38,8 +37,8 @@
         {
           "backgroundColor": "#208AEF",
           "android": {
-            "image": "./assets/images/splash-icon.png",
-            "imageWidth": 76
+            "image": "./assets/LOGO.png",
+            "imageWidth": 200
           }
         }
       ]

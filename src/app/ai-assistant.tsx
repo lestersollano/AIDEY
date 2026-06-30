@@ -4,14 +4,12 @@ import { SymbolView } from 'expo-symbols';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Linking,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AssistantStepMessage } from '@/components/assistant-step-message';
@@ -33,6 +31,10 @@ import {
   type UserLocation,
 } from '@/services/location';
 import {
+  enrichReplyWithNearestOffice,
+  shouldAutoFetchLocation,
+} from '@/services/office-finder';
+import {
   createFallbackReply,
   WELCOME_SUGGESTIONS,
   type AideyReply,
@@ -43,7 +45,7 @@ import {
   markPendingAiUnavailableError,
   markPendingInternetError,
 } from '@/utils/internet-connection';
-import { buildMapsDirectionsUrl } from '@/utils/maps';
+import { openMapDirections } from '@/utils/map-navigation';
 
 type UiChatMessage = {
   id: string;
@@ -110,10 +112,6 @@ export default function AiAssistantScreen() {
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const canSend = message.trim().length > 0 && !isLoading;
 
-  const lastAssistantMessage = [...messages]
-    .reverse()
-    .find((item) => item.role === 'assistant' && item.structured);
-  const activeSuggestions = lastAssistantMessage?.structured?.suggestions;
   const lastMapDestination = [...messages]
     .reverse()
     .find((item) => item.structured?.mapDestination)?.structured?.mapDestination;
@@ -146,7 +144,10 @@ export default function AiAssistantScreen() {
     requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
   }
 
-  async function submitMessage(text: string) {
+  async function submitMessage(
+    text: string,
+    options?: { userLocation?: UserLocation },
+  ) {
     if (isLoading) return;
 
     const trimmed = text.trim();
@@ -154,6 +155,7 @@ export default function AiAssistantScreen() {
 
     const userMessage = createMessage('user', trimmed);
     const history = messages.map(({ role, text: content }) => ({ role, text: content }));
+    let locationForOfficeLookup = options?.userLocation ?? userLocation;
 
     setMessages((current) => [...current, userMessage]);
     setMessage('');
@@ -164,9 +166,31 @@ export default function AiAssistantScreen() {
       const reply = await sendMessage(history, trimmed, {
         documentLabel: sessionDocumentLabel,
       });
+
+      const officeContext = {
+        userMessage: trimmed,
+        userLocation: locationForOfficeLookup ?? undefined,
+        documentLabel: sessionDocumentLabel,
+        history,
+      };
+
+      if (
+        !locationForOfficeLookup &&
+        shouldAutoFetchLocation(officeContext, reply)
+      ) {
+        try {
+          locationForOfficeLookup = await getUserLocationForAidey();
+          setUserLocation(locationForOfficeLookup);
+          officeContext.userLocation = locationForOfficeLookup;
+        } catch {
+          // Continue without GPS; reply may still ask for location manually.
+        }
+      }
+
+      const enrichedReply = await enrichReplyWithNearestOffice(reply, officeContext);
       setMessages((current) => [
         ...current,
-        createMessage('assistant', reply.message, reply, reply.model),
+        createMessage('assistant', enrichedReply.message, enrichedReply, reply.model),
       ]);
     } catch (error) {
       if (error instanceof AllModelsFailedError) {
@@ -193,9 +217,10 @@ export default function AiAssistantScreen() {
 
     setIsLoading(true);
     let locationMessage: string;
+    let location: UserLocation;
 
     try {
-      const location = await getUserLocationForAidey();
+      location = await getUserLocationForAidey();
       setUserLocation(location);
       locationMessage = buildLocationMessage(location);
     } catch (error) {
@@ -213,20 +238,13 @@ export default function AiAssistantScreen() {
     }
 
     setIsLoading(false);
-    await submitMessage(locationMessage);
+    await submitMessage(locationMessage, { userLocation: location });
   }
 
-  async function handleOpenMaps() {
+  function handleOpenMaps() {
     if (!lastMapDestination) return;
 
-    const url = buildMapsDirectionsUrl(
-      lastMapDestination,
-      userLocation ?? undefined,
-    );
-    const canOpen = await Linking.canOpenURL(url);
-    if (canOpen) {
-      await Linking.openURL(url);
-    }
+    openMapDirections(lastMapDestination, userLocation ?? undefined);
   }
 
   async function handleSuggestionSelect(suggestion: Suggestion) {
@@ -238,7 +256,7 @@ export default function AiAssistantScreen() {
     }
 
     if (suggestion.action === 'open_maps') {
-      await handleOpenMaps();
+      handleOpenMaps();
       return;
     }
 
@@ -279,8 +297,8 @@ export default function AiAssistantScreen() {
 
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={insets.top}>
+        behavior="translate-with-padding"
+        automaticOffset>
         <View style={styles.content}>
           <ScrollView
             ref={scrollRef}
@@ -300,6 +318,7 @@ export default function AiAssistantScreen() {
                 <View style={styles.welcomeSuggestions}>
                   <SuggestedReplies
                     suggestions={WELCOME_SUGGESTIONS}
+                    align="center"
                     onSelect={(suggestion) => void handleSuggestionSelect(suggestion)}
                   />
                 </View>
@@ -348,16 +367,6 @@ export default function AiAssistantScreen() {
               </View>
             ) : null}
           </ScrollView>
-
-          {!showWelcome && activeSuggestions && activeSuggestions.length > 0 ? (
-            <View style={styles.stickySuggestions}>
-              <SuggestedReplies
-                suggestions={activeSuggestions}
-                disabled={isLoading}
-                onSelect={(suggestion) => void handleSuggestionSelect(suggestion)}
-              />
-            </View>
-          ) : null}
 
           <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
             <View style={styles.inputBox}>
@@ -509,7 +518,6 @@ const styles = StyleSheet.create({
   assistantLoading: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    gap: 8,
   },
   loadingAvatar: {
     width: 80,
@@ -547,11 +555,6 @@ const styles = StyleSheet.create({
   },
   assistantBubbleText: {
     color: brand.navy,
-  },
-  stickySuggestions: {
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: colors.secondaryBorder,
   },
   composer: {
     paddingTop: 12,

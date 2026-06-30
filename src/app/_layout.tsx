@@ -5,9 +5,17 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { Platform, StatusBar as RNStatusBar, StyleSheet, View } from 'react-native';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 
+import { AuthGate } from '@/components/auth-gate';
 import { InternetErrorListener } from '@/components/internet-error-listener';
+import { AuthProvider } from '@/contexts/auth-context';
 import { colors } from '@/constants/colors';
+
+const fadeScreenOptions = {
+  animation: 'fade' as const,
+  animationDuration: 250,
+};
 
 SplashScreen.preventAutoHideAsync();
 
@@ -32,20 +40,36 @@ export default function RootLayout() {
   }
 
   return (
-    <View style={styles.root}>
-      {Platform.OS === 'android' && (
-        <RNStatusBar barStyle="dark-content" backgroundColor={colors.primary} />
-      )}
-      <StatusBar style="dark" />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          animation: 'fade',
-          contentStyle: { backgroundColor: colors.primary },
-        }}
-      />
-      <InternetErrorListener />
-    </View>
+    <AuthProvider>
+      <KeyboardProvider>
+        <View style={styles.root}>
+          {Platform.OS === 'android' && (
+            <RNStatusBar barStyle="dark-content" backgroundColor={colors.primary} />
+          )}
+          <StatusBar style="dark" />
+          <AuthGate>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                ...fadeScreenOptions,
+                contentStyle: { backgroundColor: colors.primary },
+              }}>
+              <Stack.Screen name="index" options={fadeScreenOptions} />
+              <Stack.Screen name="sign-in" options={fadeScreenOptions} />
+              <Stack.Screen name="account" options={fadeScreenOptions} />
+              <Stack.Screen name="settings" options={fadeScreenOptions} />
+              <Stack.Screen name="ai-assistant" options={fadeScreenOptions} />
+              <Stack.Screen name="map-directions" options={fadeScreenOptions} />
+              <Stack.Screen name="documents/index" options={fadeScreenOptions} />
+              <Stack.Screen name="documents/[id]/index" options={fadeScreenOptions} />
+              <Stack.Screen name="documents/[id]/mayroon" options={fadeScreenOptions} />
+              <Stack.Screen name="documents/[id]/wala" options={fadeScreenOptions} />
+            </Stack>
+          </AuthGate>
+          <InternetErrorListener />
+        </View>
+      </KeyboardProvider>
+    </AuthProvider>
   );
 }
 

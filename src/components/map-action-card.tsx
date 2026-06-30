@@ -1,17 +1,12 @@
-import { Image } from 'expo-image';
-import { Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import { Pressable, StyleSheet, View } from 'react-native';
 
+import { DirectionsMap } from '@/components/directions-map';
 import { Text } from '@/components/text';
 import { brand, colors } from '@/constants/colors';
 import { fonts } from '@/constants/fonts';
 import type { MapDestination } from '@/types/aidey-response';
-import {
-  buildMapsDirectionsUrl,
-  getMapRegion,
-  hasMapCoordinates,
-  type UserCoordinates,
-} from '@/utils/maps';
+import { openMapDirections } from '@/utils/map-navigation';
+import type { UserCoordinates } from '@/utils/maps';
 
 type MapActionCardProps = {
   destination: MapDestination;
@@ -19,47 +14,23 @@ type MapActionCardProps = {
 };
 
 export function MapActionCard({ destination, userLocation }: MapActionCardProps) {
-  const region = getMapRegion(destination, userLocation);
-  const showMarker = hasMapCoordinates(destination);
-
-  async function openInGoogleMaps() {
-    const url = buildMapsDirectionsUrl(destination, userLocation);
-    const canOpen = await Linking.canOpenURL(url);
-    if (canOpen) {
-      await Linking.openURL(url);
-    }
+  function openDirections() {
+    openMapDirections(destination, userLocation);
   }
 
   return (
     <View style={styles.card}>
-      <View style={styles.mapContainer}>
-        <MapView
-          style={styles.map}
-          provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
-          region={region}
-          scrollEnabled={false}
-          zoomEnabled={false}
-          rotateEnabled={false}
-          pitchEnabled={false}>
-          {showMarker ? (
-            <Marker
-              coordinate={{
-                latitude: destination.latitude!,
-                longitude: destination.longitude!,
-              }}
-              title={destination.name}
-              description={destination.address}
-            />
-          ) : null}
-          {userLocation ? (
-            <Marker
-              coordinate={userLocation}
-              pinColor={brand.blue}
-              title="Ikaw"
-            />
-          ) : null}
-        </MapView>
-      </View>
+      <Pressable
+        style={styles.mapContainer}
+        accessibilityRole="button"
+        accessibilityLabel="Buksan ang mapa"
+        onPress={openDirections}>
+        <DirectionsMap
+          destination={destination}
+          userLocation={userLocation}
+          showRoute={!!userLocation}
+        />
+      </Pressable>
 
       <View style={styles.details}>
         <Text style={styles.name}>{destination.name}</Text>
@@ -69,8 +40,10 @@ export function MapActionCard({ destination, userLocation }: MapActionCardProps)
         <Pressable
           style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
           accessibilityRole="button"
-          onPress={() => void openInGoogleMaps()}>
-          <Text style={styles.buttonText}>Buksan sa Google Maps</Text>
+          onPress={openDirections}>
+          <Text style={styles.buttonText}>
+            {userLocation ? 'Tingnan ang ruta' : 'Tingnan sa mapa'}
+          </Text>
         </Pressable>
       </View>
     </View>
@@ -89,10 +62,6 @@ const styles = StyleSheet.create({
   mapContainer: {
     height: 160,
     backgroundColor: colors.secondaryMuted,
-  },
-  map: {
-    width: '100%',
-    height: '100%',
   },
   details: {
     padding: 12,
