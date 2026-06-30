@@ -1,0 +1,130 @@
+export type SuggestionAction = 'reply' | 'share_location' | 'open_maps';
+
+export type Suggestion = {
+  label: string;
+  value: string;
+  action?: SuggestionAction;
+};
+
+export type MapDestination = {
+  name: string;
+  address?: string;
+  query?: string;
+  latitude?: number;
+  longitude?: number;
+};
+
+export type AideyStep = {
+  current: number;
+  total?: number;
+  label?: string;
+};
+
+export type AideyReply = {
+  message: string;
+  step?: AideyStep;
+  suggestions: Suggestion[];
+  needsLocation?: boolean;
+  mapDestination?: MapDestination;
+};
+
+export const AIDEY_RESPONSE_JSON_SCHEMA = {
+  type: 'object',
+  required: ['message', 'suggestions'],
+  properties: {
+    message: {
+      type: 'string',
+      description: 'One short step or one question only.',
+    },
+    step: {
+      type: 'object',
+      properties: {
+        current: { type: 'integer' },
+        total: { type: 'integer' },
+        label: { type: 'string' },
+      },
+      required: ['current'],
+    },
+    suggestions: {
+      type: 'array',
+      minItems: 2,
+      maxItems: 5,
+      items: {
+        type: 'object',
+        required: ['label', 'value'],
+        properties: {
+          label: { type: 'string' },
+          value: { type: 'string' },
+          action: {
+            type: 'string',
+            enum: ['reply', 'share_location', 'open_maps'],
+          },
+        },
+      },
+    },
+    needsLocation: { type: 'boolean' },
+    mapDestination: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        address: { type: 'string' },
+        query: { type: 'string' },
+        latitude: { type: 'number' },
+        longitude: { type: 'number' },
+      },
+      required: ['name'],
+    },
+  },
+} as const;
+
+export const WELCOME_SUGGESTIONS: Suggestion[] = [
+  { label: 'Kumuha ng PhilID', value: 'Gusto kong kumuha ng PhilID / National ID.' },
+  { label: 'Ano ang kailangan?', value: 'Ano ang mga dokumentong kailangan para sa isang government ID?' },
+  { label: 'Hanapin ang opisina', value: 'Tulungan mo akong hanapin ang pinakamalapit na opisina ng gobyerno.' },
+];
+
+export const FALLBACK_SUGGESTIONS: Suggestion[] = [
+  { label: 'Oo', value: 'Oo' },
+  { label: 'Hindi', value: 'Hindi' },
+  { label: 'Paano?', value: 'Pakipaliwanag pa.' },
+];
+
+export function isValidSuggestion(value: unknown): value is Suggestion {
+  if (!value || typeof value !== 'object') return false;
+  const item = value as Record<string, unknown>;
+  return typeof item.label === 'string' && typeof item.value === 'string';
+}
+
+const VALID_ACTIONS = new Set<SuggestionAction>(['reply', 'share_location', 'open_maps']);
+
+export function parseAideyReply(raw: string): AideyReply | null {
+  try {
+    const parsed = JSON.parse(raw) as Partial<AideyReply>;
+    if (!parsed.message || typeof parsed.message !== 'string') return null;
+    if (!Array.isArray(parsed.suggestions) || parsed.suggestions.length < 2) return null;
+    if (!parsed.suggestions.every(isValidSuggestion)) return null;
+    return {
+      message: parsed.message.trim(),
+      step: parsed.step,
+      suggestions: parsed.suggestions.map((suggestion) => ({
+        label: suggestion.label.trim(),
+        value: suggestion.value.trim(),
+        action:
+          suggestion.action && VALID_ACTIONS.has(suggestion.action)
+            ? suggestion.action
+            : 'reply',
+      })),
+      needsLocation: parsed.needsLocation,
+      mapDestination: parsed.mapDestination,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function createFallbackReply(text: string): AideyReply {
+  return {
+    message: text,
+    suggestions: FALLBACK_SUGGESTIONS,
+  };
+}

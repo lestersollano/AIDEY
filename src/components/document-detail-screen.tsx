@@ -1,3 +1,5 @@
+import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,11 +14,12 @@ function pressableStyle(baseStyle: object, pressedStyle: object) {
 }
 
 type DocumentDetailScreenProps = {
+  documentId: string;
   title: string;
   children?: ReactNode;
 };
 
-export function DocumentDetailScreen({ title, children }: DocumentDetailScreenProps) {
+export function DocumentDetailScreen({ documentId, title, children }: DocumentDetailScreenProps) {
   return (
     <SafeAreaView style={styles.container}>
       <ScreenHeader
@@ -26,14 +29,35 @@ export function DocumentDetailScreen({ title, children }: DocumentDetailScreenPr
         <View style={styles.actions}>
           <Pressable
             style={pressableStyle(styles.actionButton, styles.actionButtonPressed)}
-            accessibilityRole="button">
-            <Text style={styles.actionButtonText}>WALA pa akong {title}</Text>
+            accessibilityRole="button"
+            onPress={() => router.push(`/documents/${documentId}/wala`)}>
+            <View style={styles.actionButtonContent}>
+              <View style={styles.actionButtonIconWrapper}>
+                <Image
+                  source={require('@/assets/images/mascot/cropped/id_wala.png')}
+                  style={styles.actionButtonIcon}
+                  contentFit="contain"
+                />
+              </View>
+              <Text style={styles.actionButtonText}>WALA pa akong {title}</Text>
+            </View>
           </Pressable>
           <Pressable
             style={pressableStyle(styles.actionButton, styles.actionButtonPressed)}
-            accessibilityRole="button">
-            <Text style={styles.actionButtonText}>MERON na akong {title}</Text>
+            accessibilityRole="button"
+            onPress={() => router.push(`/documents/${documentId}/mayroon`)}>
+            <View style={styles.actionButtonContent}>
+              <View style={styles.actionButtonIconWrapper}>
+                <Image
+                  source={require('@/assets/images/mascot/cropped/id_mayroon.png')}
+                  style={styles.actionButtonIcon}
+                  contentFit="contain"
+                />
+              </View>
+              <Text style={styles.actionButtonText}>MAYROON na akong {title}</Text>
+            </View>
           </Pressable>
+          <Text style={styles.hint}>Piliin ang angkop na opsyon para sa iyo.</Text>
         </View>
         {children}
       </View>
@@ -59,15 +83,14 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   actions: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     gap: 14,
+    alignItems: 'center',
   },
   actionButton: {
     width: '100%',
     maxWidth: 320,
-    paddingVertical: 16,
+    paddingTop: 20,
+    paddingBottom: 16,
     paddingHorizontal: 20,
     borderRadius: 16,
     borderWidth: 1,
@@ -84,10 +107,34 @@ const styles = StyleSheet.create({
     opacity: 0.85,
     transform: [{ scale: 0.98 }],
   },
+  actionButtonContent: {
+    alignItems: 'center',
+    gap: 8,
+    width: '100%',
+  },
+  actionButtonIconWrapper: {
+    width: '100%',
+    height: 140,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionButtonIcon: {
+    width: 110,
+    height: 110,
+  },
   actionButtonText: {
     fontSize: 16,
     fontFamily: fonts.semiBold,
     color: brand.navy,
     textAlign: 'center',
+  },
+  hint: {
+    marginTop: 8,
+    maxWidth: 320,
+    fontSize: 15,
+    fontFamily: fonts.regular,
+    color: colors.secondary,
+    textAlign: 'center',
+    lineHeight: 22,
   },
 });

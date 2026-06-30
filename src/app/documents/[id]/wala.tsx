@@ -1,9 +1,9 @@
 import { Redirect, useLocalSearchParams } from 'expo-router';
 
-import { DocumentDetailScreen } from '@/components/document-detail-screen';
+import { DocumentWalaScreen } from '@/components/document-wala-screen';
 import { getDocumentById } from '@/constants/documents';
 
-export default function DocumentDetailRoute() {
+export default function DocumentWalaRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const document = getDocumentById(id ?? '');
 
@@ -11,5 +11,5 @@ export default function DocumentDetailRoute() {
     return <Redirect href="/documents" />;
   }
 
-  return <DocumentDetailScreen title={document.label} />;
+  return <DocumentWalaScreen title={document.label} />;
 }

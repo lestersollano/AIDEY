@@ -6,6 +6,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { Platform, StatusBar as RNStatusBar, StyleSheet, View } from 'react-native';
 
+import { InternetErrorListener } from '@/components/internet-error-listener';
 import { colors } from '@/constants/colors';
 
 SplashScreen.preventAutoHideAsync();
@@ -43,6 +44,7 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: colors.primary },
         }}
       />
+      <InternetErrorListener />
     </View>
   );
 }

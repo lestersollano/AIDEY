@@ -8,7 +8,8 @@
     "scheme": "aidey",
     "userInterfaceStyle": "light",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.glak.aidey"
     },
     "androidStatusBar": {
       "barStyle": "dark-content",
@@ -16,6 +17,7 @@
       "translucent": false
     },
     "android": {
+      "package": "com.glak.aidey",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -29,6 +31,7 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "expo-dev-client",
       "expo-router",
       [
         "expo-splash-screen",
@@ -44,6 +47,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "1ab3e097-ea29-4ba6-8097-4e447fbb7fe1"
+      }
+    },
+    "owner": "lesterr"
   }
 }

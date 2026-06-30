@@ -1,16 +1,13 @@
 import { Image } from "expo-image";
-import { router, useFocusEffect } from "expo-router";
+import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
-import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AideyWordmark } from "@/components/aidey-wordmark";
-import { InternetErrorModal } from "@/components/internet-error-modal";
 import { Text } from "@/components/text";
 import { brand, colors } from "@/constants/colors";
 import { fonts } from "@/constants/fonts";
-import { consumePendingInternetError } from "@/utils/internet-connection";
 
 function pressableStyle(baseStyle: object, pressedStyle: object) {
     return ({ pressed }: { pressed: boolean }) => [
@@ -20,22 +17,8 @@ function pressableStyle(baseStyle: object, pressedStyle: object) {
 }
 
 export default function HomeScreen() {
-    const [showInternetError, setShowInternetError] = useState(false);
-
-    useFocusEffect(
-        useCallback(() => {
-            if (consumePendingInternetError()) {
-                setShowInternetError(true);
-            }
-        }, []),
-    );
-
     return (
         <SafeAreaView style={styles.container}>
-            <InternetErrorModal
-                visible={showInternetError}
-                onDismiss={() => setShowInternetError(false)}
-            />
             <View style={styles.content}>
                 <View style={styles.header}>
                     <Pressable

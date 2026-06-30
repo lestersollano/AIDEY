@@ -1,3 +1,4 @@
 allowBuilds:
   '@google/genai': true
+  dtrace-provider: true
   protobufjs: true

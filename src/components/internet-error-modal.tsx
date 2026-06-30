@@ -8,9 +8,20 @@ import { fonts } from '@/constants/fonts';
 type InternetErrorModalProps = {
   visible: boolean;
   onDismiss: () => void;
+  title?: string;
+  message?: string;
 };
 
-export function InternetErrorModal({ visible, onDismiss }: InternetErrorModalProps) {
+const DEFAULT_TITLE = 'Problema sa Koneksyon';
+const DEFAULT_MESSAGE =
+  'Siguraduhing nakakonekta ka sa internet. Kung nakakonekta ka na, maaaring hindi stable ang iyong koneksyon.';
+
+export function InternetErrorModal({
+  visible,
+  onDismiss,
+  title = DEFAULT_TITLE,
+  message = DEFAULT_MESSAGE,
+}: InternetErrorModalProps) {
   return (
     <Modal
       visible={visible}
@@ -24,11 +35,8 @@ export function InternetErrorModal({ visible, onDismiss }: InternetErrorModalPro
             style={styles.mascot}
             contentFit="contain"
           />
-          <Text style={styles.title}>Problema sa Koneksyon</Text>
-          <Text style={styles.message}>
-            Siguraduhing nakakonekta ka sa internet. Kung nakakonekta ka na, maaaring hindi
-            stable ang iyong koneksyon.
-          </Text>
+          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.message}>{message}</Text>
           <Pressable
             style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
             accessibilityLabel="Isara"

@@ -1,15 +1,29 @@
 import NetInfo from '@react-native-community/netinfo';
 
-let pendingInternetError = false;
+export type PendingError =
+  | { type: 'connection' }
+  | { type: 'ai-unavailable' };
+
+let pendingError: PendingError | null = null;
 
 export function markPendingInternetError() {
-  pendingInternetError = true;
+  pendingError = { type: 'connection' };
 }
 
+export function markPendingAiUnavailableError() {
+  pendingError = { type: 'ai-unavailable' };
+}
+
+export function consumePendingError(): PendingError | null {
+  const error = pendingError;
+  pendingError = null;
+  return error;
+}
+
+/** @deprecated Use consumePendingError */
 export function consumePendingInternetError() {
-  const shouldShow = pendingInternetError;
-  pendingInternetError = false;
-  return shouldShow;
+  const error = consumePendingError();
+  return error?.type === 'connection';
 }
 
 export async function hasValidInternetConnection(): Promise<boolean> {
