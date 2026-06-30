@@ -5,6 +5,45 @@ export type UserCoordinates = {
   longitude: number;
 };
 
+export const OFFICE_PROXIMITY_METERS = 100;
+
+export function distanceMeters(
+  origin: UserCoordinates,
+  destination: UserCoordinates,
+): number {
+  const toRadians = (value: number) => (value * Math.PI) / 180;
+  const earthRadiusM = 6371000;
+  const dLat = toRadians(destination.latitude - origin.latitude);
+  const dLng = toRadians(destination.longitude - origin.longitude);
+  const lat1 = toRadians(origin.latitude);
+  const lat2 = toRadians(destination.latitude);
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+
+  return earthRadiusM * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+export function getMapDestinationKey(destination: MapDestination): string | null {
+  if (destination.latitude == null || destination.longitude == null) return null;
+  return `${destination.latitude.toFixed(5)},${destination.longitude.toFixed(5)}`;
+}
+
+export function isWithinOfficeProximity(
+  userLocation: UserCoordinates,
+  destination: MapDestination,
+  radiusMeters = OFFICE_PROXIMITY_METERS,
+): boolean {
+  if (destination.latitude == null || destination.longitude == null) return false;
+  return (
+    distanceMeters(userLocation, {
+      latitude: destination.latitude,
+      longitude: destination.longitude,
+    }) <= radiusMeters
+  );
+}
+
 export function getMapRegion(
   destination: MapDestination,
   userLocation?: UserCoordinates,

@@ -1,7 +1,40 @@
 import { router } from 'expo-router';
 
 import type { MapDestination } from '@/types/aidey-response';
-import type { UserCoordinates } from '@/utils/maps';
+import { hasMapCoordinates, type UserCoordinates } from '@/utils/maps';
+
+const MAP_RELEVANCE_MESSAGE_WINDOW = 10;
+
+type MapRelevantMessage = {
+  structured?: {
+    mapDestination?: MapDestination;
+  };
+};
+
+export function isMapRelevantInConversation<T extends MapRelevantMessage>(
+  messages: T[],
+): boolean {
+  const lastMapIndex = messages.findLastIndex((item) => {
+    const destination = item.structured?.mapDestination;
+    return destination != null && hasMapCoordinates(destination);
+  });
+  if (lastMapIndex === -1) return false;
+
+  return messages.length - 1 - lastMapIndex <= MAP_RELEVANCE_MESSAGE_WINDOW;
+}
+
+export function getActiveMapDestination<T extends MapRelevantMessage>(
+  messages: T[],
+): MapDestination | undefined {
+  if (!isMapRelevantInConversation(messages)) return undefined;
+
+  return [...messages]
+    .reverse()
+    .find((item) => {
+      const destination = item.structured?.mapDestination;
+      return destination != null && hasMapCoordinates(destination);
+    })?.structured?.mapDestination;
+}
 
 type MapDirectionsParams = {
   name: string;

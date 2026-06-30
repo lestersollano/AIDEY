@@ -24,6 +24,7 @@ import {
   sendMessage,
   type ChatRole,
 } from '@/services/chat';
+import { useLiveUserLocation } from '@/hooks/use-live-user-location';
 import {
   buildLocationMessage,
   getUserLocationForAidey,
@@ -38,6 +39,7 @@ import {
   createFallbackReply,
   WELCOME_SUGGESTIONS,
   type AideyReply,
+  type MapDestination,
   type Suggestion,
 } from '@/types/aidey-response';
 import {
@@ -45,7 +47,16 @@ import {
   markPendingAiUnavailableError,
   markPendingInternetError,
 } from '@/utils/internet-connection';
-import { openMapDirections } from '@/utils/map-navigation';
+import {
+  getActiveMapDestination,
+  isMapRelevantInConversation,
+  openMapDirections,
+} from '@/utils/map-navigation';
+import {
+  getMapDestinationKey,
+  isWithinOfficeProximity,
+  type UserCoordinates,
+} from '@/utils/maps';
 
 type UiChatMessage = {
   id: string;
@@ -111,10 +122,48 @@ export default function AiAssistantScreen() {
   const [connectionChecked, setConnectionChecked] = useState(false);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const canSend = message.trim().length > 0 && !isLoading;
+  const mapIsRelevant = isMapRelevantInConversation(messages);
+  const activeMapDestination = getActiveMapDestination(messages);
+  const liveUserLocation = useLiveUserLocation(mapIsRelevant);
+  const trackedUserLocation = liveUserLocation ?? userLocation ?? undefined;
+  const proximityTriggeredRef = useRef<string | null>(null);
 
-  const lastMapDestination = [...messages]
-    .reverse()
-    .find((item) => item.structured?.mapDestination)?.structured?.mapDestination;
+  const destinationKey = activeMapDestination
+    ? getMapDestinationKey(activeMapDestination)
+    : null;
+
+  useEffect(() => {
+    proximityTriggeredRef.current = null;
+  }, [destinationKey]);
+
+  useEffect(() => {
+    if (
+      !mapIsRelevant ||
+      !activeMapDestination ||
+      !liveUserLocation ||
+      isLoading
+    ) {
+      return;
+    }
+
+    if (!isWithinOfficeProximity(liveUserLocation, activeMapDestination)) {
+      return;
+    }
+
+    const destinationKey = getMapDestinationKey(activeMapDestination);
+    if (!destinationKey || proximityTriggeredRef.current === destinationKey) {
+      return;
+    }
+
+    proximityTriggeredRef.current = destinationKey;
+    void submitArrivalInstructions(activeMapDestination, liveUserLocation);
+  }, [
+    activeMapDestination,
+    isLoading,
+    liveUserLocation,
+    mapIsRelevant,
+    messages,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -142,6 +191,71 @@ export default function AiAssistantScreen() {
 
   function scrollToBottom() {
     requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+  }
+
+  async function submitArrivalInstructions(
+    destination: MapDestination,
+    currentLocation: UserCoordinates,
+  ) {
+    if (isLoading) return;
+
+    setIsLoading(true);
+    scrollToBottom();
+
+    const history = messages.map(({ role, text: content }) => ({ role, text: content }));
+    const arrivalMessage = `Narating ko na ang ${destination.name}. Malapit na ako sa opisina.`;
+
+    try {
+      const reply = await sendMessage(history, arrivalMessage, {
+        documentLabel: sessionDocumentLabel,
+        atOfficeProximity: {
+          officeName: destination.name,
+          officeAddress: destination.address,
+        },
+      });
+
+      setUserLocation((current) =>
+        current
+          ? { ...current, ...currentLocation }
+          : {
+              ...currentLocation,
+              label: destination.address ?? destination.name,
+            },
+      );
+
+      const onSiteReply: AideyReply = {
+        ...reply,
+        mapDestination: undefined,
+        needsLocation: false,
+        suggestions:
+          reply.suggestions.length >= 2
+            ? reply.suggestions.filter((suggestion) => suggestion.action !== 'open_maps')
+            : reply.suggestions,
+      };
+
+      setMessages((current) => [
+        ...current,
+        createMessage('assistant', onSiteReply.message, onSiteReply, reply.model),
+      ]);
+    } catch (error) {
+      proximityTriggeredRef.current = null;
+
+      if (error instanceof AllModelsFailedError) {
+        markPendingAiUnavailableError();
+        router.back();
+        return;
+      }
+
+      const errorText =
+        error instanceof Error ? error.message : 'May naganap na error. Subukan muli.';
+      setMessages((current) => [
+        ...current,
+        createMessage('assistant', errorText, createFallbackReply(errorText)),
+      ]);
+    } finally {
+      setIsLoading(false);
+      scrollToBottom();
+    }
   }
 
   async function submitMessage(
@@ -242,9 +356,9 @@ export default function AiAssistantScreen() {
   }
 
   function handleOpenMaps() {
-    if (!lastMapDestination) return;
+    if (!activeMapDestination) return;
 
-    openMapDirections(lastMapDestination, userLocation ?? undefined);
+    openMapDirections(activeMapDestination, trackedUserLocation);
   }
 
   async function handleSuggestionSelect(suggestion: Suggestion) {
@@ -343,10 +457,12 @@ export default function AiAssistantScreen() {
                       <AssistantStepMessage
                         reply={item.structured}
                         model={item.model}
-                        suggestionsDisabled={!isLatestAssistant || isLoading}
-                        userLocation={userLocation ?? undefined}
-                        onSelectSuggestion={(suggestion) =>
-                          void handleSuggestionSelect(suggestion)
+                        suggestionsDisabled={isLoading}
+                        userLocation={trackedUserLocation}
+                        onSelectSuggestion={
+                          isLatestAssistant
+                            ? (suggestion) => void handleSuggestionSelect(suggestion)
+                            : undefined
                         }
                       />
                     ) : (

@@ -1,5 +1,5 @@
 import * as Location from 'expo-location';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 
@@ -7,6 +7,7 @@ import { Text } from '@/components/text';
 import { brand, colors } from '@/constants/colors';
 import { getGoogleMapsApiKey } from '@/constants/maps';
 import { fonts } from '@/constants/fonts';
+import { useLiveUserLocation } from '@/hooks/use-live-user-location';
 import { fetchDrivingRoute, getDirectionsErrorMessage } from '@/services/directions';
 import type { MapDestination } from '@/types/aidey-response';
 import { getMapRegion, hasMapCoordinates, type UserCoordinates } from '@/utils/maps';
@@ -54,6 +55,9 @@ export function DirectionsMap({
   showRoute = true,
 }: DirectionsMapProps) {
   const mapRef = useRef<MapView>(null);
+  const liveUserLocation = useLiveUserLocation(interactive);
+  const activeUserLocation = liveUserLocation ?? userLocation;
+  const lastRouteOriginRef = useRef<string | null>(null);
   const [resolvedDestination, setResolvedDestination] = useState<ResolvedCoordinates | null>(
     hasMapCoordinates(destination)
       ? {
@@ -107,10 +111,15 @@ export function DirectionsMap({
     let cancelled = false;
 
     async function loadRoute() {
-      if (!showRoute || !apiKey || !userLocation || !resolvedDestination) {
+      if (!showRoute || !apiKey || !activeUserLocation || !resolvedDestination) {
         setRouteCoordinates([]);
         setRouteError(null);
         setIsLoadingRoute(false);
+        return;
+      }
+
+      const originKey = `${activeUserLocation.latitude.toFixed(4)},${activeUserLocation.longitude.toFixed(4)}`;
+      if (lastRouteOriginRef.current === originKey) {
         return;
       }
 
@@ -118,9 +127,10 @@ export function DirectionsMap({
       setRouteError(null);
 
       try {
-        const route = await fetchDrivingRoute(userLocation, resolvedDestination);
+        const route = await fetchDrivingRoute(activeUserLocation, resolvedDestination);
         if (cancelled) return;
 
+        lastRouteOriginRef.current = originKey;
         setRouteCoordinates(route.coordinates);
         mapRef.current?.fitToCoordinates(route.coordinates, {
           edgePadding: { top: 48, right: 48, bottom: 48, left: 48 },
@@ -144,18 +154,28 @@ export function DirectionsMap({
     };
   }, [
     apiKey,
+    activeUserLocation?.latitude,
+    activeUserLocation?.longitude,
     resolvedDestination?.latitude,
     resolvedDestination?.longitude,
     showRoute,
-    userLocation?.latitude,
-    userLocation?.longitude,
   ]);
 
-  const region = getMapRegion(
-    resolvedDestination
-      ? { ...destination, ...resolvedDestination }
-      : destination,
-    userLocation,
+  const region = useMemo(
+    () =>
+      getMapRegion(
+        resolvedDestination
+          ? { ...destination, ...resolvedDestination }
+          : destination,
+        activeUserLocation,
+      ),
+    [
+      activeUserLocation?.latitude,
+      activeUserLocation?.longitude,
+      destination,
+      resolvedDestination?.latitude,
+      resolvedDestination?.longitude,
+    ],
   );
 
   return (
@@ -169,8 +189,9 @@ export function DirectionsMap({
         zoomEnabled={interactive}
         rotateEnabled={interactive}
         pitchEnabled={interactive}
-        showsUserLocation={interactive && !!userLocation}
-        showsMyLocationButton={interactive && !!userLocation}>
+        showsUserLocation={interactive}
+        showsMyLocationButton={interactive}
+        followsUserLocation={interactive}>
         {resolvedDestination ? (
           <Marker
             coordinate={resolvedDestination}
@@ -178,8 +199,8 @@ export function DirectionsMap({
             description={destination.address}
           />
         ) : null}
-        {userLocation ? (
-          <Marker coordinate={userLocation} pinColor={brand.blue} title="Ikaw" />
+        {!interactive && activeUserLocation ? (
+          <Marker coordinate={activeUserLocation} pinColor={brand.blue} title="Ikaw" />
         ) : null}
         {routeCoordinates.length > 0 ? (
           <Polyline
@@ -202,7 +223,7 @@ export function DirectionsMap({
         </View>
       ) : null}
 
-      {!apiKey && showRoute && userLocation && resolvedDestination ? (
+      {!apiKey && showRoute && activeUserLocation && resolvedDestination ? (
         <View style={styles.banner}>
           <Text style={styles.bannerText}>
             Idagdag ang EXPO_PUBLIC_GOOGLE_MAPS_API_KEY para sa ruta.
