@@ -29,6 +29,51 @@
       }
     },
 
+    "taskChecklists": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+
+        "$taskKey": {
+          ".validate": "newData.hasChildren(['items', 'updatedAt'])",
+
+          "documentLabel": {
+            ".validate": "newData.isString() || newData.val() == null"
+          },
+
+          "items": {
+            "$index": {
+              ".validate": "newData.hasChildren(['id', 'label', 'done'])",
+
+              "id": {
+                ".validate": "newData.isString() && newData.val().length > 0"
+              },
+
+              "label": {
+                ".validate": "newData.isString() && newData.val().length > 0"
+              },
+
+              "done": {
+                ".validate": "newData.isBoolean()"
+              },
+
+              "$other": {
+                ".validate": false
+              }
+            }
+          },
+
+          "updatedAt": {
+            ".validate": "newData.isNumber() && newData.val() <= now"
+          },
+
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
+
     "$other": {
       ".read": false,
       ".write": false

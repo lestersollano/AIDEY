@@ -49,6 +49,7 @@ export function DocumentWalaScreen({ documentId, title }: DocumentWalaScreenProp
               params: {
                 prompt: getDocumentHelpPrompt(title),
                 documentLabel: title,
+                documentId,
               },
             })
           }>

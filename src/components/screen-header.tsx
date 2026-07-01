@@ -9,9 +9,10 @@ const HEADER_SIDE_WIDTH = 40;
 
 type ScreenHeaderProps = {
   title: ReactNode;
+  right?: ReactNode;
 };
 
-export function ScreenHeader({ title }: ScreenHeaderProps) {
+export function ScreenHeader({ title, right }: ScreenHeaderProps) {
   return (
     <View style={styles.header}>
       <View style={styles.side}>
@@ -27,7 +28,7 @@ export function ScreenHeader({ title }: ScreenHeaderProps) {
         </Pressable>
       </View>
       <View style={styles.titleWrapper}>{title}</View>
-      <View style={styles.side} />
+      <View style={styles.side}>{right}</View>
     </View>
   );
 }

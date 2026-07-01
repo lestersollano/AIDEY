@@ -14,9 +14,11 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { AssistantStepMessage } from '@/components/assistant-step-message';
 import { AideyWordmark } from '@/components/aidey-wordmark';
+import { ChatHistorySidebar } from '@/components/chat-history-sidebar';
 import { ScreenHeader } from '@/components/screen-header';
 import { SpeechToTextButton } from '@/components/speech-to-text-button';
 import { SuggestedReplies } from '@/components/suggested-replies';
+import { TaskChecklistCard } from '@/components/task-checklist-card';
 import { Text, TextInput } from '@/components/text';
 import { brand, colors } from '@/constants/colors';
 import { getDocumentById } from '@/constants/documents';
@@ -26,7 +28,15 @@ import {
   sendMessage,
   type ChatRole,
 } from '@/services/chat';
+import {
+  createChatSession,
+  getChatSession,
+  saveChatSessionMessages,
+  type ChatMessageRecord,
+} from '@/services/chat-sessions';
+import { useChatSessions } from '@/hooks/use-chat-sessions';
 import { useDocumentUploads } from '@/hooks/use-document-uploads';
+import { useTaskChecklist } from '@/hooks/use-task-checklist';
 import { useLiveUserLocation } from '@/hooks/use-live-user-location';
 import {
   buildLocationMessage,
@@ -61,14 +71,7 @@ import {
   type UserCoordinates,
 } from '@/utils/maps';
 
-type UiChatMessage = {
-  id: string;
-  role: ChatRole;
-  text: string;
-  structured?: AideyReply;
-  model?: string;
-  isArrivalCheck?: boolean;
-};
+type UiChatMessage = ChatMessageRecord;
 
 const MOOD_IMAGES = {
   thinking: require('@/assets/images/mascot/mood/thinking.png'),
@@ -114,13 +117,16 @@ export default function AiAssistantScreen() {
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
   const autoSentRef = useRef(false);
-  const { prompt, documentLabel } = useLocalSearchParams<{
+  const { prompt, documentLabel, documentId } = useLocalSearchParams<{
     prompt?: string;
     documentLabel?: string;
+    documentId?: string;
   }>();
   const initialPrompt = typeof prompt === 'string' ? prompt : undefined;
-  const sessionDocumentLabel =
+  const initialDocumentLabel =
     typeof documentLabel === 'string' ? documentLabel : undefined;
+  const initialDocumentId =
+    typeof documentId === 'string' && documentId ? documentId : undefined;
 
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<UiChatMessage[]>([]);
@@ -128,14 +134,49 @@ export default function AiAssistantScreen() {
   const [connectionChecked, setConnectionChecked] = useState(false);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [finishedTaskIds, setFinishedTaskIds] = useState<Set<string>>(new Set());
+  const [activeDocumentLabel, setActiveDocumentLabel] = useState<string | undefined>(
+    initialDocumentLabel,
+  );
+  const [activeDocumentId, setActiveDocumentId] = useState<string | undefined>(
+    initialDocumentId,
+  );
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [sidebarVisible, setSidebarVisible] = useState(false);
+  const sessionCreationRef = useRef<Promise<string> | null>(null);
+  const chatSessions = useChatSessions();
+  const taskKey = activeDocumentId ?? 'general';
+
   const documentUploads = useDocumentUploads();
   const ownedDocumentIds = Object.keys(documentUploads);
+  const { items: checklistItems, applyChecklist, toggleItem: toggleChecklistItem } =
+    useTaskChecklist(taskKey);
   const canSend = message.trim().length > 0 && !isLoading;
   const mapIsRelevant = isMapRelevantInConversation(messages);
   const activeMapDestination = getActiveMapDestination(messages);
   const liveUserLocation = useLiveUserLocation(mapIsRelevant);
   const trackedUserLocation = liveUserLocation ?? userLocation ?? undefined;
   const proximityTriggeredRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (messages.length === 0) return;
+
+    if (currentSessionId) {
+      void saveChatSessionMessages(currentSessionId, messages);
+      return;
+    }
+
+    if (!sessionCreationRef.current) {
+      sessionCreationRef.current = createChatSession({
+        documentId: activeDocumentId,
+        documentLabel: activeDocumentLabel,
+      }).then((session) => {
+        setCurrentSessionId(session.id);
+        return session.id;
+      });
+    }
+
+    void sessionCreationRef.current.then((id) => saveChatSessionMessages(id, messages));
+  }, [messages, currentSessionId, activeDocumentId, activeDocumentLabel]);
 
   const destinationKey = activeMapDestination
     ? getMapDestinationKey(activeMapDestination)
@@ -216,13 +257,18 @@ export default function AiAssistantScreen() {
 
     try {
       const reply = await sendMessage(history, arrivalMessage, {
-        documentLabel: sessionDocumentLabel,
+        documentLabel: activeDocumentLabel,
         ownedDocumentIds,
+        checklist: checklistItems.length ? checklistItems : undefined,
         atOfficeProximity: {
           officeName: destination.name,
           officeAddress: destination.address,
         },
       });
+
+      if (reply.checklist?.length) {
+        void applyChecklist(reply.checklist, activeDocumentLabel);
+      }
 
       setUserLocation((current) =>
         current
@@ -290,14 +336,19 @@ export default function AiAssistantScreen() {
 
     try {
       const reply = await sendMessage(history, trimmed, {
-        documentLabel: sessionDocumentLabel,
+        documentLabel: activeDocumentLabel,
         ownedDocumentIds,
+        checklist: checklistItems.length ? checklistItems : undefined,
       });
+
+      if (reply.checklist?.length) {
+        void applyChecklist(reply.checklist, activeDocumentLabel);
+      }
 
       const officeContext = {
         userMessage: trimmed,
         userLocation: locationForOfficeLookup ?? undefined,
-        documentLabel: sessionDocumentLabel,
+        documentLabel: activeDocumentLabel,
         history,
       };
 
@@ -386,6 +437,29 @@ export default function AiAssistantScreen() {
     // Gallery is not functional yet — adding documents will be wired up later.
   }
 
+  function handleNewChat() {
+    sessionCreationRef.current = null;
+    setCurrentSessionId(null);
+    setMessages([]);
+    setFinishedTaskIds(new Set());
+    setActiveDocumentId(undefined);
+    setActiveDocumentLabel(undefined);
+    setSidebarVisible(false);
+  }
+
+  async function handleSelectSession(sessionId: string) {
+    const session = await getChatSession(sessionId);
+    if (!session) return;
+
+    sessionCreationRef.current = Promise.resolve(session.id);
+    setCurrentSessionId(session.id);
+    setMessages(session.messages);
+    setActiveDocumentId(session.documentId);
+    setActiveDocumentLabel(session.documentLabel);
+    setFinishedTaskIds(new Set());
+    setSidebarVisible(false);
+  }
+
   async function handleSuggestionSelect(suggestion: Suggestion) {
     if (isLoading) return;
 
@@ -440,6 +514,28 @@ export default function AiAssistantScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <ScreenHeader
         title={<AideyWordmark style={styles.headerTitle} suffix=" AI" />}
+        right={
+          <Pressable
+            style={pressableStyle(styles.menuButton, styles.menuButtonPressed)}
+            accessibilityLabel="Menu"
+            onPress={() => setSidebarVisible(true)}
+            hitSlop={8}>
+            <SymbolView
+              name={{ ios: 'line.3.horizontal', android: 'menu', web: 'menu' }}
+              size={22}
+              tintColor={colors.secondary}
+            />
+          </Pressable>
+        }
+      />
+
+      <ChatHistorySidebar
+        visible={sidebarVisible}
+        sessions={chatSessions}
+        activeSessionId={currentSessionId}
+        onClose={() => setSidebarVisible(false)}
+        onNewChat={handleNewChat}
+        onSelectSession={(sessionId) => void handleSelectSession(sessionId)}
       />
 
       <KeyboardAvoidingView
@@ -447,6 +543,15 @@ export default function AiAssistantScreen() {
         behavior="translate-with-padding"
         automaticOffset>
         <View style={styles.content}>
+          {checklistItems.length > 0 ? (
+            <View style={styles.checklistWrapper}>
+              <TaskChecklistCard
+                items={checklistItems}
+                onToggleItem={(itemId, done) => void toggleChecklistItem(itemId, done)}
+              />
+            </View>
+          ) : null}
+
           <ScrollView
             ref={scrollRef}
             style={styles.messages}
@@ -499,7 +604,7 @@ export default function AiAssistantScreen() {
                         }
                         showTaskCompletion={!!item.isArrivalCheck && isLatestAssistant}
                         taskFinished={finishedTaskIds.has(item.id)}
-                        documentLabel={sessionDocumentLabel}
+                        documentLabel={activeDocumentLabel}
                         onFinishTask={() => handleFinishTask(item.id)}
                         onAddToGallery={handleAddToGallery}
                       />
@@ -634,8 +739,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  menuButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuButtonPressed: {
+    opacity: 0.7,
+  },
   content: {
     flex: 1,
+  },
+  checklistWrapper: {
+    paddingTop: 12,
   },
   messages: {
     flex: 1,

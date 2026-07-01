@@ -6,6 +6,7 @@ import {
   createFallbackReply,
   parseAideyReply,
   type AideyReply,
+  type ChecklistItem,
 } from '@/types/aidey-response';
 
 export type ChatRole = 'user' | 'assistant';
@@ -22,6 +23,7 @@ export type ChatSessionContext = {
     officeName: string;
     officeAddress?: string;
   };
+  checklist?: ChecklistItem[];
 };
 
 export type ChatReply = AideyReply & {
@@ -55,6 +57,10 @@ function buildSystemPrompt(context?: ChatSessionContext): string {
     ? `The user already has these saved in their document catalogue: ${ownedDocumentLabels.join(', ')}. Treat these as documents/IDs the user already possesses — do NOT ask if they already have them or tell them how to get them from scratch; only offer to help with renewal, replacement, or using them as a requirement for something else if relevant. `
     : 'The user has not saved any documents in their catalogue yet. ';
 
+  const checklistContext = context?.checklist?.length
+    ? `The task checklist so far (id/label/done) is: ${JSON.stringify(context.checklist)}. Return this EXACT list of items (same ids, same labels, same order) in your checklist field every time, only flipping "done" to true when that milestone is actually completed. Never rename, remove, reorder, or add items to an existing checklist unless the user's goal changes to something else entirely. `
+    : '';
+
   const arrivalContext = context?.atOfficeProximity
     ? `The user is now within 25 meters of ${context.atOfficeProximity.officeName}${
         context.atOfficeProximity.officeAddress
@@ -67,6 +73,7 @@ function buildSystemPrompt(context?: ChatSessionContext): string {
     'You are Aidey, a friendly virtual guide in a mobile app that helps Filipinos get government documents and IDs. ' +
     `${documentContext} ` +
     `${ownedDocumentsContext}` +
+    `${checklistContext}` +
     `${arrivalContext}` +
     'Reply in the same language the user writes in (Tagalog or English). ' +
     'You MUST respond with JSON matching the provided schema. ' +
@@ -87,7 +94,10 @@ function buildSystemPrompt(context?: ChatSessionContext): string {
     'Include one suggestion with action "save_document" whose value is EXACTLY that matching id (never invent an id, never use the label as the value) and whose label is a short call to action like "Itago sa Catalogue". ' +
     'Always pair it with a decline suggestion (e.g. label "Hindi muna", value "Hindi muna", action "reply"). ' +
     'Only use action "save_document" when the document clearly matches one id in the list; otherwise ask a clarifying question instead. ' +
-    '(8) If the user asks what IDs/documents they already have, or which ones they are missing, answer using the owned-documents list above (compare it against the catalogue) instead of asking them to repeat what they have.'
+    '(8) If the user asks what IDs/documents they already have, or which ones they are missing, answer using the owned-documents list above (compare it against the catalogue) instead of asking them to repeat what they have. ' +
+    '(9) Once the user\'s overall task/goal is clear (usually by your second reply), include a "checklist" field with 3-5 short milestone items covering the whole journey end-to-end (e.g. "Ihanda ang mga kinakailangang dokumento", "Pumunta sa opisina", "Kausapin ang clerk o staff", "Kumpletuhin ang application/tanggapin ang output"), each with a stable id (lowercase-kebab-case), a short label, and done=false initially. ' +
+    'From then on, include the SAME checklist in every reply (see the current checklist state above once it exists), only updating "done" to true for a milestone once it is genuinely finished based on the conversation (e.g. user confirms they have all documents, GPS arrival is signaled, user says they talked to the clerk). ' +
+    'Do not mark an item done just because you mentioned or explained it. Do not include a checklist field before the task is clear or for simple one-off questions that are not a multi-step journey.'
   );
 }
 

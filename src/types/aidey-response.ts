@@ -20,12 +20,19 @@ export type AideyStep = {
   label?: string;
 };
 
+export type ChecklistItem = {
+  id: string;
+  label: string;
+  done: boolean;
+};
+
 export type AideyReply = {
   message: string;
   step?: AideyStep;
   suggestions: Suggestion[];
   needsLocation?: boolean;
   mapDestination?: MapDestination;
+  checklist?: ChecklistItem[];
 };
 
 export const AIDEY_RESPONSE_JSON_SCHEMA = {
@@ -74,6 +81,20 @@ export const AIDEY_RESPONSE_JSON_SCHEMA = {
       },
       required: ['name'],
     },
+    checklist: {
+      type: 'array',
+      minItems: 2,
+      maxItems: 6,
+      items: {
+        type: 'object',
+        required: ['id', 'label', 'done'],
+        properties: {
+          id: { type: 'string' },
+          label: { type: 'string' },
+          done: { type: 'boolean' },
+        },
+      },
+    },
   },
 } as const;
 
@@ -93,6 +114,18 @@ export function isValidSuggestion(value: unknown): value is Suggestion {
   if (!value || typeof value !== 'object') return false;
   const item = value as Record<string, unknown>;
   return typeof item.label === 'string' && typeof item.value === 'string';
+}
+
+export function isValidChecklistItem(value: unknown): value is ChecklistItem {
+  if (!value || typeof value !== 'object') return false;
+  const item = value as Record<string, unknown>;
+  return (
+    typeof item.id === 'string' &&
+    item.id.trim().length > 0 &&
+    typeof item.label === 'string' &&
+    item.label.trim().length > 0 &&
+    typeof item.done === 'boolean'
+  );
 }
 
 const VALID_ACTIONS = new Set<SuggestionAction>([
@@ -121,6 +154,15 @@ export function parseAideyReply(raw: string): AideyReply | null {
       })),
       needsLocation: parsed.needsLocation,
       mapDestination: parsed.mapDestination,
+      checklist: Array.isArray(parsed.checklist)
+        ? parsed.checklist
+            .filter(isValidChecklistItem)
+            .map((item) => ({
+              id: item.id.trim(),
+              label: item.label.trim(),
+              done: item.done,
+            }))
+        : undefined,
     };
   } catch {
     return null;
