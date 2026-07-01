@@ -41,6 +41,13 @@
             "imageWidth": 200
           }
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Kailangan ng Aidey ang access sa iyong mga larawan para ma-upload ang iyong ID o dokumento.",
+          "cameraPermission": "Kailangan ng Aidey ang access sa camera para makakuha ng larawan ng iyong ID o dokumento."
+        }
       ]
     ],
     "experiments": {

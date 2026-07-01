@@ -15,15 +15,18 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AssistantStepMessage } from '@/components/assistant-step-message';
 import { AideyWordmark } from '@/components/aidey-wordmark';
 import { ScreenHeader } from '@/components/screen-header';
+import { SpeechToTextButton } from '@/components/speech-to-text-button';
 import { SuggestedReplies } from '@/components/suggested-replies';
 import { Text, TextInput } from '@/components/text';
 import { brand, colors } from '@/constants/colors';
+import { getDocumentById } from '@/constants/documents';
 import { fonts } from '@/constants/fonts';
 import {
   AllModelsFailedError,
   sendMessage,
   type ChatRole,
 } from '@/services/chat';
+import { useDocumentUploads } from '@/hooks/use-document-uploads';
 import { useLiveUserLocation } from '@/hooks/use-live-user-location';
 import {
   buildLocationMessage,
@@ -125,6 +128,8 @@ export default function AiAssistantScreen() {
   const [connectionChecked, setConnectionChecked] = useState(false);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [finishedTaskIds, setFinishedTaskIds] = useState<Set<string>>(new Set());
+  const documentUploads = useDocumentUploads();
+  const ownedDocumentIds = Object.keys(documentUploads);
   const canSend = message.trim().length > 0 && !isLoading;
   const mapIsRelevant = isMapRelevantInConversation(messages);
   const activeMapDestination = getActiveMapDestination(messages);
@@ -212,6 +217,7 @@ export default function AiAssistantScreen() {
     try {
       const reply = await sendMessage(history, arrivalMessage, {
         documentLabel: sessionDocumentLabel,
+        ownedDocumentIds,
         atOfficeProximity: {
           officeName: destination.name,
           officeAddress: destination.address,
@@ -285,6 +291,7 @@ export default function AiAssistantScreen() {
     try {
       const reply = await sendMessage(history, trimmed, {
         documentLabel: sessionDocumentLabel,
+        ownedDocumentIds,
       });
 
       const officeContext = {
@@ -390,6 +397,14 @@ export default function AiAssistantScreen() {
     if (suggestion.action === 'open_maps') {
       handleOpenMaps();
       return;
+    }
+
+    if (suggestion.action === 'save_document') {
+      const document = getDocumentById(suggestion.value);
+      if (document) {
+        router.push(`/documents/${document.id}/mayroon`);
+        return;
+      }
     }
 
     await submitMessage(suggestion.value);
@@ -522,17 +537,27 @@ export default function AiAssistantScreen() {
 
               <View style={styles.toolbar}>
                 <View style={styles.toolbarLeft}>
-                  <Pressable
-                    style={pressableStyle(styles.iconButton, styles.iconButtonPressed)}
-                    accessibilityLabel="Speech to text"
+                  <SpeechToTextButton
+                    style={styles.iconButton}
+                    pressedStyle={styles.iconButtonPressed}
+                    iconColor={brand.teal}
                     disabled={isLoading}
-                    hitSlop={8}>
-                    <SymbolView
-                      name={{ ios: 'mic.fill', android: 'mic', web: 'mic' }}
-                      size={22}
-                      tintColor={brand.teal}
-                    />
-                  </Pressable>
+                    onTranscript={(transcript) =>
+                      setMessage((current) =>
+                        current ? `${current} ${transcript}` : transcript,
+                      )
+                    }
+                    onError={(errorMessage) => {
+                      setMessages((current) => [
+                        ...current,
+                        createMessage(
+                          'assistant',
+                          errorMessage,
+                          createFallbackReply(errorMessage),
+                        ),
+                      ]);
+                    }}
+                  />
                   <Pressable
                     style={pressableStyle(styles.iconButton, styles.iconButtonPressed)}
                     accessibilityLabel="Camera"

@@ -1,0 +1,37 @@
+{
+  "rules": {
+    "documentUploads": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+
+        "$documentId": {
+          "$imageId": {
+            ".validate": "newData.hasChildren(['remoteUrl', 'storagePath', 'updatedAt'])",
+
+            "remoteUrl": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().beginsWith('https://')"
+            },
+
+            "storagePath": {
+              ".validate": "newData.isString() && newData.val().beginsWith('documents/' + $uid + '/' + $documentId + '/' + $imageId)"
+            },
+
+            "updatedAt": {
+              ".validate": "newData.isNumber() && newData.val() <= now"
+            },
+
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      }
+    },
+
+    "$other": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}

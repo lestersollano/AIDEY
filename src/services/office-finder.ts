@@ -43,6 +43,7 @@ const OFFICE_INTENT_PATTERNS = [
   /where\s+is\s+the\s+(nearest\s+)?office/i,
   /find\s+the\s+nearest\s+office/i,
   /office\s+location/i,
+  /location\s+of\s+(the\s+)?[a-z0-9\s]*office/i,
   /lokasyon\s+ng\s+opisina/i,
 ];
 
@@ -128,8 +129,9 @@ function hasOfficeDirectionsIntent(context: OfficeFinderContext) {
 function asksWhereAgencyIs(context: OfficeFinderContext) {
   const conversationText = collectConversationText(context);
   return (
-    /saan\s+ang|nasaan\s+ang|where\s+is|where\s+can\s+i/i.test(conversationText) &&
-    inferLikelyAgency(context) != null
+    /saan\s+ang|nasaan\s+ang|where\s+is|where\s+can\s+i|location\s+of/i.test(
+      conversationText,
+    ) && inferLikelyAgency(context) != null
   );
 }
 

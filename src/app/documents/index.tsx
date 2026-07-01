@@ -1,28 +1,32 @@
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ScreenHeader } from '@/components/screen-header';
 import { IdUploadField } from '@/components/id-upload-field';
+import { SpeechToTextButton } from '@/components/speech-to-text-button';
 import { Text, TextInput } from '@/components/text';
 import { brand, colors } from '@/constants/colors';
 import { DOCUMENTS } from '@/constants/documents';
 import { fonts } from '@/constants/fonts';
+import { useDocumentUploads } from '@/hooks/use-document-uploads';
 import { filterByFuzzyMatch } from '@/utils/fuzzy-match';
-
-function pressableStyle(baseStyle: object, pressedStyle: object) {
-  return ({ pressed }: { pressed: boolean }) => [baseStyle, pressed && pressedStyle];
-}
 
 export default function DocumentsScreen() {
   const [query, setQuery] = useState('');
+  const uploads = useDocumentUploads();
 
-  const filteredDocuments = useMemo(
-    () => filterByFuzzyMatch(DOCUMENTS, query, (document) => document.label),
-    [query],
-  );
+  const filteredDocuments = useMemo(() => {
+    const matched = filterByFuzzyMatch(DOCUMENTS, query, (document) => document.label);
+
+    return [...matched].sort((a, b) => {
+      const aFilled = (uploads[a.id]?.length ?? 0) > 0 ? 0 : 1;
+      const bFilled = (uploads[b.id]?.length ?? 0) > 0 ? 0 : 1;
+      return aFilled - bFilled;
+    });
+  }, [query, uploads]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -46,15 +50,15 @@ export default function DocumentsScreen() {
             returnKeyType="search"
           />
         </View>
-        <Pressable
-          style={pressableStyle(styles.speechButton, styles.speechButtonPressed)}
-          accessibilityLabel="Speech to text">
-          <SymbolView
-            name={{ ios: 'mic.fill', android: 'mic', web: 'mic' }}
-            size={22}
-            tintColor={brand.navy}
-          />
-        </Pressable>
+        <SpeechToTextButton
+          style={styles.speechButton}
+          pressedStyle={styles.speechButtonPressed}
+          iconColor={brand.navy}
+          onTranscript={(transcript) =>
+            setQuery((current) => (current ? `${current} ${transcript}` : transcript))
+          }
+          onError={(message) => Alert.alert('Speech to text', message)}
+        />
       </View>
 
       <View style={styles.scrollShadowClip}>
@@ -70,13 +74,25 @@ export default function DocumentsScreen() {
           {filteredDocuments.length === 0 ? (
             <Text style={styles.emptyState}>Walang nahanap na dokumento.</Text>
           ) : (
-            filteredDocuments.map((document) => (
-              <IdUploadField
-                key={document.id}
-                label={document.label}
-                onPress={() => router.push(`/documents/${document.id}`)}
-              />
-            ))
+            filteredDocuments.map((document) => {
+              const images = uploads[document.id] ?? [];
+
+              return (
+                <IdUploadField
+                  key={document.id}
+                  label={document.label}
+                  imageUri={images[0]?.localUri}
+                  imageCount={images.length}
+                  onPress={() =>
+                    router.push(
+                      images.length > 0
+                        ? `/documents/${document.id}/mayroon`
+                        : `/documents/${document.id}`,
+                    )
+                  }
+                />
+              );
+            })
           )}
         </ScrollView>
       </View>

@@ -64,6 +64,7 @@ export default function RootLayout() {
               <Stack.Screen name="documents/[id]/index" options={fadeScreenOptions} />
               <Stack.Screen name="documents/[id]/mayroon" options={fadeScreenOptions} />
               <Stack.Screen name="documents/[id]/wala" options={fadeScreenOptions} />
+              <Stack.Screen name="documents/[id]/steps" options={fadeScreenOptions} />
             </Stack>
           </AuthGate>
           <InternetErrorListener />

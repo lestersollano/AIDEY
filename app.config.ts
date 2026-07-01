@@ -20,6 +20,15 @@ export default (): ExpoConfig => ({
         iosGoogleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,
       },
     ],
+    [
+      'expo-speech-recognition',
+      {
+        microphonePermission:
+          'Kailangan ng Aidey ang access sa iyong microphone para gumana ang speech-to-text.',
+        speechRecognitionPermission:
+          'Kailangan ng Aidey ang access sa speech recognition para maunawaan ang iyong sinasabi.',
+      },
+    ],
   ],
   ios: {
     ...baseConfig.ios,

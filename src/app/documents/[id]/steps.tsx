@@ -1,9 +1,9 @@
 import { Redirect, useLocalSearchParams } from 'expo-router';
 
-import { DocumentMayroonScreen } from '@/components/document-mayroon-screen';
+import { DocumentStepsScreen } from '@/components/document-steps-screen';
 import { getDocumentById } from '@/constants/documents';
 
-export default function DocumentMayroonRoute() {
+export default function DocumentStepsRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const document = getDocumentById(id ?? '');
 
@@ -11,5 +11,5 @@ export default function DocumentMayroonRoute() {
     return <Redirect href="/documents" />;
   }
 
-  return <DocumentMayroonScreen documentId={document.id} title={document.label} />;
+  return <DocumentStepsScreen title={document.label} />;
 }

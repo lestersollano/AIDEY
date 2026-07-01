@@ -11,5 +11,5 @@ export default function DocumentWalaRoute() {
     return <Redirect href="/documents" />;
   }
 
-  return <DocumentWalaScreen title={document.label} />;
+  return <DocumentWalaScreen documentId={document.id} title={document.label} />;
 }

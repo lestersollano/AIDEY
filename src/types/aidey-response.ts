@@ -1,4 +1,4 @@
-export type SuggestionAction = 'reply' | 'share_location' | 'open_maps';
+export type SuggestionAction = 'reply' | 'share_location' | 'open_maps' | 'save_document';
 
 export type Suggestion = {
   label: string;
@@ -57,7 +57,7 @@ export const AIDEY_RESPONSE_JSON_SCHEMA = {
           value: { type: 'string' },
           action: {
             type: 'string',
-            enum: ['reply', 'share_location', 'open_maps'],
+            enum: ['reply', 'share_location', 'open_maps', 'save_document'],
           },
         },
       },
@@ -95,7 +95,12 @@ export function isValidSuggestion(value: unknown): value is Suggestion {
   return typeof item.label === 'string' && typeof item.value === 'string';
 }
 
-const VALID_ACTIONS = new Set<SuggestionAction>(['reply', 'share_location', 'open_maps']);
+const VALID_ACTIONS = new Set<SuggestionAction>([
+  'reply',
+  'share_location',
+  'open_maps',
+  'save_document',
+]);
 
 export function parseAideyReply(raw: string): AideyReply | null {
   try {
