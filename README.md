@@ -65,16 +65,66 @@ AIDEY treats every government document like a **destination on a map** — with 
 
 ### <img src="./assets/readme/google.webp" alt="Google" width="32" height="32" /> Google APIs & SDKs
 
-| Logo | Google product | SDK / API | How AIDEY uses it |
-| :---: | --- | --- | --- |
-| <img src="./assets/readme/gemini.png" alt="Gemini" width="128" height="128" /> | **Gemini API** | [`@google/genai`](https://www.npmjs.com/package/@google/genai) | Powers the AI assistant chat. Sends conversation history plus app context (owned documents, guide progress, location, checklists) to Gemini models and receives structured JSON replies with messages, suggested chips, task checklists, and map destinations. Falls back across multiple models (`gemini-2.5-flash`, `gemini-2.5-flash-lite`, etc.) if one fails. |
-| <img src="./assets/readme/authentication.png" alt="Firebase Authentication" width="128" height="128" /> | **Firebase Authentication** | Firebase JS SDK (`firebase/auth`) | Email/password sign-up and sign-in. Gates cloud sync so uploads, chat sessions, and guide progress are tied to a user account. |
-| <img src="./assets/readme/storage.png" alt="Firebase Cloud Storage" width="128" height="128" /> | **Firebase Cloud Storage** | Firebase JS SDK (`firebase/storage`) | Stores uploaded ID and document photos in the cloud. Images are saved locally first, then synced to Storage when the user is signed in and online. |
-| <img src="./assets/readme/rtdb.png" alt="Firebase Realtime Database" width="128" height="128" /> | **Firebase Realtime Database** | Firebase JS SDK (`firebase/database`) | Syncs user data across devices: chat session history, document upload metadata, and step-by-step guide progress (checked requirements, completed steps). |
-| <img src="./assets/readme/hosting.png" alt="Firebase Hosting" width="128" height="128" /> | **Firebase Hosting** | Firebase CLI | Hosts the static web build of the app at [aidey.web.app](https://aidey.web.app). |
-| <img src="./assets/readme/maps.svg" alt="Google Maps" width="128" height="128" /> | **Google Routes API** | REST (`routes.googleapis.com/directions/v2:computeRoutes`) | Computes driving routes from the user's GPS location to the nearest government office. Returns distance, duration, and an encoded polyline drawn on the in-app map. |
-| <img src="./assets/readme/maps.svg" alt="Google Maps" width="128" height="128" /> | **Google Places API** | Places Text Search (`maps/api/place/textsearch/json`) | Finds the nearest issuing office when the user asks for directions or when the AI sets a `mapDestination`. Searches by agency name (e.g. PSA, LTO, DFA) with a 50 km radius bias around the user's location, then ranks results by distance. |
-| <img src="./assets/readme/maps.svg" alt="Google Maps" width="128" height="128" /> | **Google Maps SDK for Android** | `react-native-maps` (`PROVIDER_GOOGLE`) | Renders the interactive map on Android with Google map tiles, destination markers, the user's live location, and the driving route polyline. |
+<table>
+  <thead>
+    <tr>
+      <th align="center">Logo</th>
+      <th>Google product</th>
+      <th>SDK / API</th>
+      <th>How AIDEY uses it</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="center"><img src="./assets/readme/gemini.png" alt="Gemini" width="128" height="128" /></td>
+      <td><strong>Gemini API</strong></td>
+      <td><a href="https://www.npmjs.com/package/@google/genai"><code>@google/genai</code></a></td>
+      <td>Powers the AI assistant chat. Sends conversation history plus app context (owned documents, guide progress, location, checklists) to Gemini models and receives structured JSON replies with messages, suggested chips, task checklists, and map destinations. Falls back across multiple models (<code>gemini-2.5-flash</code>, <code>gemini-2.5-flash-lite</code>, etc.) if one fails.</td>
+    </tr>
+    <tr>
+      <td align="center"><img src="./assets/readme/authentication.png" alt="Firebase Authentication" width="128" height="128" /></td>
+      <td><strong>Firebase Authentication</strong></td>
+      <td>Firebase JS SDK (<code>firebase/auth</code>)</td>
+      <td>Email/password sign-up and sign-in. Gates cloud sync so uploads, chat sessions, and guide progress are tied to a user account.</td>
+    </tr>
+    <tr>
+      <td align="center"><img src="./assets/readme/storage.png" alt="Firebase Cloud Storage" width="128" height="128" /></td>
+      <td><strong>Firebase Cloud Storage</strong></td>
+      <td>Firebase JS SDK (<code>firebase/storage</code>)</td>
+      <td>Stores uploaded ID and document photos in the cloud. Images are saved locally first, then synced to Storage when the user is signed in and online.</td>
+    </tr>
+    <tr>
+      <td align="center"><img src="./assets/readme/rtdb.png" alt="Firebase Realtime Database" width="128" height="128" /></td>
+      <td><strong>Firebase Realtime Database</strong></td>
+      <td>Firebase JS SDK (<code>firebase/database</code>)</td>
+      <td>Syncs user data across devices: chat session history, document upload metadata, and step-by-step guide progress (checked requirements, completed steps).</td>
+    </tr>
+    <tr>
+      <td align="center"><img src="./assets/readme/hosting.png" alt="Firebase Hosting" width="128" height="128" /></td>
+      <td><strong>Firebase Hosting</strong></td>
+      <td>Firebase CLI</td>
+      <td>Hosts the static web build of the app at <a href="https://aidey.web.app">aidey.web.app</a>.</td>
+    </tr>
+    <tr>
+      <td align="center"><img src="./assets/readme/maps.svg" alt="Google Maps" width="128" height="128" /></td>
+      <td><strong>Google Routes API</strong></td>
+      <td>REST (<code>routes.googleapis.com/directions/v2:computeRoutes</code>)</td>
+      <td>Computes driving routes from the user's GPS location to the nearest government office. Returns distance, duration, and an encoded polyline drawn on the in-app map.</td>
+    </tr>
+    <tr>
+      <td align="center"><img src="./assets/readme/maps.svg" alt="Google Maps" width="128" height="128" /></td>
+      <td><strong>Google Places API</strong></td>
+      <td>Places Text Search (<code>maps/api/place/textsearch/json</code>)</td>
+      <td>Finds the nearest issuing office when the user asks for directions or when the AI sets a <code>mapDestination</code>. Searches by agency name (e.g. PSA, LTO, DFA) with a 50 km radius bias around the user's location, then ranks results by distance.</td>
+    </tr>
+    <tr>
+      <td align="center"><img src="./assets/readme/maps.svg" alt="Google Maps" width="128" height="128" /></td>
+      <td><strong>Google Maps SDK for Android</strong></td>
+      <td><code>react-native-maps</code> (<code>PROVIDER_GOOGLE</code>)</td>
+      <td>Renders the interactive map on Android with Google map tiles, destination markers, the user's live location, and the driving route polyline.</td>
+    </tr>
+  </tbody>
+</table>
 
 > **Note:** Device GPS and reverse geocoding use Expo Location (native OS services), not a Google API. Speech-to-text search uses the device's built-in speech recognition via `expo-speech-recognition`.
 
