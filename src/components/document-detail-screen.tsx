@@ -1,11 +1,12 @@
-import { Image } from "expo-image";
-import { router } from "expo-router";
+import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ScreenHeader } from "@/components/screen-header";
 import { Text } from "@/components/text";
+import { useTranslation } from "@/contexts/locale-context";
 import { brand, colors } from "@/constants/colors";
 import { fonts } from "@/constants/fonts";
 
@@ -27,6 +28,8 @@ export function DocumentDetailScreen({
     title,
     children,
 }: DocumentDetailScreenProps) {
+    const { t } = useTranslation();
+
     return (
         <SafeAreaView style={styles.container}>
             <ScreenHeader
@@ -53,7 +56,7 @@ export function DocumentDetailScreen({
                                 />
                             </View>
                             <Text style={styles.actionButtonText}>
-                                WALA pa akong {title}
+                                {t("documents.dontHave", { title })}
                             </Text>
                         </View>
                     </Pressable>
@@ -76,13 +79,11 @@ export function DocumentDetailScreen({
                                 />
                             </View>
                             <Text style={styles.actionButtonText}>
-                                MAYROON na akong {title}
+                                {t("documents.alreadyHave", { title })}
                             </Text>
                         </View>
                     </Pressable>
-                    <Text style={styles.hint}>
-                        Piliin ang angkop na opsyon para sa iyo.
-                    </Text>
+                    <Text style={styles.hint}>{t("documents.detailHint")}</Text>
                 </View>
                 {children}
             </View>

@@ -8,6 +8,7 @@ import { ScreenHeader } from '@/components/screen-header';
 import { IdUploadField } from '@/components/id-upload-field';
 import { SpeechToTextButton } from '@/components/speech-to-text-button';
 import { Text, TextInput } from '@/components/text';
+import { useTranslation } from '@/contexts/locale-context';
 import { brand, colors } from '@/constants/colors';
 import { DOCUMENTS } from '@/constants/documents';
 import { fonts } from '@/constants/fonts';
@@ -15,6 +16,7 @@ import { useDocumentUploads } from '@/hooks/use-document-uploads';
 import { filterByFuzzyMatch } from '@/utils/fuzzy-match';
 
 export default function DocumentsScreen() {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const uploads = useDocumentUploads();
 
@@ -30,9 +32,7 @@ export default function DocumentsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScreenHeader
-        title={<Text style={styles.headerTitle}>Mga Dokumento at ID</Text>}
-      />
+      <ScreenHeader title={<Text style={styles.headerTitle}>{t('documents.title')}</Text>} />
 
       <View style={styles.searchRow}>
         <View style={styles.searchBar}>
@@ -43,7 +43,7 @@ export default function DocumentsScreen() {
           />
           <TextInput
             style={styles.searchInput}
-            placeholder="I-type dito ang kailangan"
+            placeholder={t('documents.searchPlaceholder')}
             placeholderTextColor={colors.secondaryPlaceholder}
             value={query}
             onChangeText={setQuery}
@@ -57,7 +57,7 @@ export default function DocumentsScreen() {
           onTranscript={(transcript) =>
             setQuery((current) => (current ? `${current} ${transcript}` : transcript))
           }
-          onError={(message) => Alert.alert('Speech to text', message)}
+          onError={(message) => Alert.alert(t('documents.speechToText'), message)}
         />
       </View>
 
@@ -72,7 +72,7 @@ export default function DocumentsScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           {filteredDocuments.length === 0 ? (
-            <Text style={styles.emptyState}>Walang nahanap na dokumento.</Text>
+            <Text style={styles.emptyState}>{t('documents.empty')}</Text>
           ) : (
             filteredDocuments.map((document) => {
               const images = uploads[document.id] ?? [];

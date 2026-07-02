@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { get, ref as databaseRef, set as databaseSet } from 'firebase/database';
 
+import { getCachedLocale } from '@/contexts/locale-context';
+import { translate } from '@/i18n';
 import { auth, database } from '@/lib/firebase';
 import type { ChatRole } from '@/services/chat';
 import type { AideyReply, ChecklistItem } from '@/types/aidey-response';
@@ -51,11 +53,22 @@ export function isSessionOpen(session: Pick<ChatSession, 'checklist'>): boolean 
   return !isChecklistComplete(session.checklist);
 }
 
+function getDefaultSessionTitle() {
+  return translate(getCachedLocale(), 'ai.defaultSessionTitle');
+}
+
+function isDefaultSessionTitle(title: string) {
+  return (
+    title === translate('fil-PH', 'ai.defaultSessionTitle') ||
+    title === translate('en-US', 'ai.defaultSessionTitle')
+  );
+}
+
 /** Fills in defaults for fields that may be missing from older cached/remote records. */
 function normalizeSession(id: string, value: Partial<Omit<ChatSession, 'id'>>): ChatSession {
   return {
     id,
-    title: value.title ?? 'Bagong Chat',
+    title: value.title ?? getDefaultSessionTitle(),
     documentId: value.documentId ?? undefined,
     documentLabel: value.documentLabel ?? undefined,
     messages: Array.isArray(value.messages) ? value.messages : [],
@@ -167,7 +180,7 @@ function generateSessionId(): string {
 
 function deriveTitle(messages: ChatMessageRecord[]): string {
   const firstUserMessage = messages.find((message) => message.role === 'user');
-  if (!firstUserMessage) return 'Bagong Chat';
+  if (!firstUserMessage) return getDefaultSessionTitle();
 
   const trimmed = firstUserMessage.text.trim();
   if (trimmed.length <= MAX_TITLE_LENGTH) return trimmed;
@@ -228,7 +241,7 @@ export async function createChatSession(options?: {
   const now = Date.now();
   const session: ChatSession = {
     id: generateSessionId(),
-    title: 'Bagong Chat',
+    title: getDefaultSessionTitle(),
     documentId: options?.documentId,
     documentLabel: options?.documentLabel,
     messages: [],
@@ -261,7 +274,7 @@ export async function saveChatSession(
     ...existing,
     messages,
     checklist: updates.checklist ?? existing.checklist,
-    title: existing.title === 'Bagong Chat' ? deriveTitle(messages) : existing.title,
+    title: isDefaultSessionTitle(existing.title) ? deriveTitle(messages) : existing.title,
     updatedAt: Date.now(),
   };
 

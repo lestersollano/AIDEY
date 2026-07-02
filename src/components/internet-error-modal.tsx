@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/text';
+import { useTranslation } from '@/contexts/locale-context';
 import { brand, colors } from '@/constants/colors';
 import { fonts } from '@/constants/fonts';
 
@@ -12,22 +13,16 @@ type InternetErrorModalProps = {
   message?: string;
 };
 
-const DEFAULT_TITLE = 'Problema sa Koneksyon';
-const DEFAULT_MESSAGE =
-  'Siguraduhing nakakonekta ka sa internet. Kung nakakonekta ka na, maaaring hindi stable ang iyong koneksyon.';
-
 export function InternetErrorModal({
   visible,
   onDismiss,
-  title = DEFAULT_TITLE,
-  message = DEFAULT_MESSAGE,
+  title,
+  message,
 }: InternetErrorModalProps) {
+  const { t } = useTranslation();
+
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onDismiss}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>
       <View style={styles.backdrop}>
         <View style={styles.card}>
           <Image
@@ -35,13 +30,13 @@ export function InternetErrorModal({
             style={styles.mascot}
             contentFit="contain"
           />
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.message}>{message}</Text>
+          <Text style={styles.title}>{title ?? t('connection.title')}</Text>
+          <Text style={styles.message}>{message ?? t('connection.message')}</Text>
           <Pressable
             style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
-            accessibilityLabel="Isara"
+            accessibilityLabel={t('common.close')}
             onPress={onDismiss}>
-            <Text style={styles.buttonText}>Sige</Text>
+            <Text style={styles.buttonText}>{t('common.ok')}</Text>
           </Pressable>
         </View>
       </View>

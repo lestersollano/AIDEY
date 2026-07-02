@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { DirectionsMap } from '@/components/directions-map';
 import { Text } from '@/components/text';
+import { useTranslation } from '@/contexts/locale-context';
 import { brand, colors } from '@/constants/colors';
 import { fonts } from '@/constants/fonts';
 import type { MapDestination } from '@/types/aidey-response';
@@ -14,6 +15,8 @@ type MapActionCardProps = {
 };
 
 export function MapActionCard({ destination, userLocation }: MapActionCardProps) {
+  const { t } = useTranslation();
+
   function openDirections() {
     openMapDirections(destination, userLocation);
   }
@@ -23,7 +26,7 @@ export function MapActionCard({ destination, userLocation }: MapActionCardProps)
       <Pressable
         style={styles.mapContainer}
         accessibilityRole="button"
-        accessibilityLabel="Buksan ang mapa"
+        accessibilityLabel={t('maps.openMap')}
         onPress={openDirections}>
         <DirectionsMap
           destination={destination}
@@ -42,7 +45,7 @@ export function MapActionCard({ destination, userLocation }: MapActionCardProps)
           accessibilityRole="button"
           onPress={openDirections}>
           <Text style={styles.buttonText}>
-            {userLocation ? 'Tingnan ang ruta' : 'Tingnan sa mapa'}
+            {userLocation ? t('maps.viewRoute') : t('maps.viewOnMap')}
           </Text>
         </Pressable>
       </View>

@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { DocumentUploadPanel } from '@/components/document-upload-panel';
 import { ScreenHeader } from '@/components/screen-header';
 import { Text } from '@/components/text';
+import { useTranslation } from '@/contexts/locale-context';
 import { brand, colors } from '@/constants/colors';
 import { fonts } from '@/constants/fonts';
 
@@ -14,11 +15,11 @@ type DocumentMayroonScreenProps = {
 };
 
 export function DocumentMayroonScreen({ documentId, title }: DocumentMayroonScreenProps) {
+  const { t } = useTranslation();
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScreenHeader
-        title={<Text style={styles.headerTitle}>{title}</Text>}
-      />
+      <ScreenHeader title={<Text style={styles.headerTitle}>{title}</Text>} />
 
       <ScrollView
         style={styles.scrollArea}
@@ -30,11 +31,8 @@ export function DocumentMayroonScreen({ documentId, title }: DocumentMayroonScre
             style={styles.mascot}
             contentFit="contain"
           />
-          <Text style={styles.heading}>MAYROON na akong {title}</Text>
-          <Text style={styles.message}>
-            I-upload ang iyong {title} para mai-save ito sa Aidey at madaling mahanap kapag
-            kailangan mo.
-          </Text>
+          <Text style={styles.heading}>{t('documents.alreadyHave', { title })}</Text>
+          <Text style={styles.message}>{t('documents.mayroonMessage', { title })}</Text>
         </View>
 
         <DocumentUploadPanel documentId={documentId} title={title} />

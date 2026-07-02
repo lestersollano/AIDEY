@@ -2,6 +2,7 @@ import { SymbolView } from 'expo-symbols';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/text';
+import { useTranslation } from '@/contexts/locale-context';
 import { brand, colors } from '@/constants/colors';
 import { fonts } from '@/constants/fonts';
 
@@ -18,19 +19,21 @@ export function TaskCompletionCard({
   onFinish,
   onAddToGallery,
 }: TaskCompletionCardProps) {
+  const { t } = useTranslation();
+
   if (!isFinished) {
     return (
       <Pressable
         style={({ pressed }) => [styles.finishButton, pressed && styles.finishButtonPressed]}
         accessibilityRole="button"
-        accessibilityLabel="Tapos ko na ito"
+        accessibilityLabel={t('ai.finishTask')}
         onPress={onFinish}>
         <SymbolView
           name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }}
           size={18}
           tintColor={colors.primary}
         />
-        <Text style={styles.finishButtonText}>Tapos ko na ito</Text>
+        <Text style={styles.finishButtonText}>{t('ai.finishTask')}</Text>
       </Pressable>
     );
   }
@@ -43,7 +46,7 @@ export function TaskCompletionCard({
           size={20}
           tintColor={brand.teal}
         />
-        <Text style={styles.doneText}>Magaling! Natapos mo na ang hakbang na ito.</Text>
+        <Text style={styles.doneText}>{t('ai.taskDone')}</Text>
       </View>
 
       {documentLabel ? (
@@ -53,7 +56,7 @@ export function TaskCompletionCard({
             pressed && styles.galleryButtonPressed,
           ]}
           accessibilityRole="button"
-          accessibilityLabel={`Idagdag ang ${documentLabel} sa gallery`}
+          accessibilityLabel={t('ai.addToGalleryA11y', { label: documentLabel })}
           onPress={onAddToGallery}>
           <View style={styles.galleryIcon}>
             <SymbolView
@@ -67,13 +70,13 @@ export function TaskCompletionCard({
             />
           </View>
           <View style={styles.galleryTextWrapper}>
-            <Text style={styles.galleryLabel}>Idagdag sa Gallery</Text>
+            <Text style={styles.galleryLabel}>{t('ai.addToGallery')}</Text>
             <Text style={styles.galleryHint} numberOfLines={1}>
               {documentLabel}
             </Text>
           </View>
           <View style={styles.comingSoonBadge}>
-            <Text style={styles.comingSoonText}>Paparating na</Text>
+            <Text style={styles.comingSoonText}>{t('ai.comingSoon')}</Text>
           </View>
         </Pressable>
       ) : null}

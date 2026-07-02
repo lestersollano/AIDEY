@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AideyWordmark } from "@/components/aidey-wordmark";
 import { Text } from "@/components/text";
+import { useTranslation } from "@/contexts/locale-context";
 import { brand, colors } from "@/constants/colors";
 import { fonts } from "@/constants/fonts";
 
@@ -17,6 +18,8 @@ function pressableStyle(baseStyle: object, pressedStyle: object) {
 }
 
 export default function HomeScreen() {
+    const { t } = useTranslation();
+
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.content}>
@@ -26,7 +29,7 @@ export default function HomeScreen() {
                             styles.headerButton,
                             styles.headerButtonPressed,
                         )}
-                        accessibilityLabel="Menu"
+                        accessibilityLabel={t("common.menu")}
                     >
                         <SymbolView
                             name={{
@@ -44,7 +47,7 @@ export default function HomeScreen() {
                             styles.headerButton,
                             styles.headerButtonPressed,
                         )}
-                        accessibilityLabel="Settings"
+                        accessibilityLabel={t("common.settings")}
                         onPress={() => router.push("/settings")}
                     >
                         <SymbolView
@@ -83,10 +86,10 @@ export default function HomeScreen() {
                             </View>
                             <View style={styles.buttonTextWrapper}>
                                 <Text style={styles.buttonTextDocuments}>
-                                    Mga Dokumento at ID
+                                    {t("home.documentsTitle")}
                                 </Text>
                                 <Text style={styles.buttonSubtext}>
-                                    Tingnan at i-upload ang mga ID
+                                    {t("home.documentsSubtitle")}
                                 </Text>
                             </View>
                             <SymbolView
@@ -123,10 +126,10 @@ export default function HomeScreen() {
                             </View>
                             <View style={styles.buttonTextWrapper}>
                                 <Text style={styles.buttonTextAi}>
-                                    Magpatulong sa AI
+                                    {t("home.aiTitle")}
                                 </Text>
                                 <Text style={styles.buttonSubtextAi}>
-                                    Magtanong at humingi ng tulong
+                                    {t("home.aiSubtitle")}
                                 </Text>
                             </View>
                             <SymbolView
@@ -144,10 +147,7 @@ export default function HomeScreen() {
 
                 <View style={styles.hero}>
                     <AideyWordmark style={styles.greeting} />
-                    <Text style={styles.tagline}>
-                        Ako si Aidey, ang iyong Gabay sa Dokumento at ID! Piliin
-                        ang kailangan mo sa mga opsyon sa itaas.
-                    </Text>
+                    <Text style={styles.tagline}>{t("home.tagline")}</Text>
                 </View>
             </View>
 

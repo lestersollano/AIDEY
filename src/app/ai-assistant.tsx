@@ -50,14 +50,17 @@ import {
   enrichReplyWithNearestOffice,
   shouldAutoFetchLocation,
 } from '@/services/office-finder';
+import { useTranslation } from '@/contexts/locale-context';
 import {
-  createDefaultChecklist,
-  createFallbackReply,
-  WELCOME_SUGGESTIONS,
-  type AideyReply,
-  type ChecklistItem,
-  type MapDestination,
-  type Suggestion,
+  createLocalizedChecklist,
+  createLocalizedFallbackReply,
+  getWelcomeSuggestions,
+} from '@/i18n/ai-helpers';
+import type {
+  AideyReply,
+  ChecklistItem,
+  MapDestination,
+  Suggestion,
 } from '@/types/aidey-response';
 import {
   hasValidInternetConnection,
@@ -129,6 +132,7 @@ function AssistantLoadingMessage() {
 }
 
 export default function AiAssistantScreen() {
+  const { locale, t } = useTranslation();
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
   const autoSentRef = useRef(false);
@@ -189,14 +193,14 @@ export default function AiAssistantScreen() {
           session.checklist.length
             ? session.checklist
             : findLastChecklistInMessages(session.messages) ??
-                (session.documentLabel ? createDefaultChecklist(session.documentLabel) : []),
+                (session.documentLabel ? createLocalizedChecklist(t, session.documentLabel) : []),
         );
         setActiveDocumentId((current) => current ?? session.documentId);
         setActiveDocumentLabel((current) => current ?? session.documentLabel);
       } else if (initialDocumentLabel) {
         // Seed a checklist immediately so it's visible right away instead of
         // waiting on the AI to decide to include one in its first reply.
-        setChecklistItems(createDefaultChecklist(initialDocumentLabel));
+        setChecklistItems(createLocalizedChecklist(t, initialDocumentLabel));
       }
 
       setSessionResumed(true);
@@ -320,7 +324,7 @@ export default function AiAssistantScreen() {
     scrollToBottom();
 
     const history = messages.map(({ role, text: content }) => ({ role, text: content }));
-    const arrivalMessage = `Narating ko na ang ${destination.name}. Malapit na ako sa opisina.`;
+    const arrivalMessage = t('ai.arrivalMessage', { name: destination.name });
 
     try {
       const reply = await sendMessage(history, arrivalMessage, {
@@ -332,6 +336,7 @@ export default function AiAssistantScreen() {
           officeName: destination.name,
           officeAddress: destination.address,
         },
+        locale,
       });
 
       if (reply.checklist?.length) {
@@ -373,10 +378,10 @@ export default function AiAssistantScreen() {
       }
 
       const errorText =
-        error instanceof Error ? error.message : 'May naganap na error. Subukan muli.';
+        error instanceof Error ? error.message : t('common.genericError');
       setMessages((current) => [
         ...current,
-        createMessage('assistant', errorText, createFallbackReply(errorText)),
+        createMessage('assistant', errorText, createLocalizedFallbackReply(t, errorText)),
       ]);
     } finally {
       setIsLoading(false);
@@ -408,6 +413,7 @@ export default function AiAssistantScreen() {
         ownedDocumentIds,
         documentGuideProgress,
         checklist: checklistItems.length ? checklistItems : undefined,
+        locale,
       });
 
       if (reply.checklist?.length) {
@@ -426,7 +432,7 @@ export default function AiAssistantScreen() {
         shouldAutoFetchLocation(officeContext, reply)
       ) {
         try {
-          locationForOfficeLookup = await getUserLocationForAidey();
+          locationForOfficeLookup = await getUserLocationForAidey(locale);
           setUserLocation(locationForOfficeLookup);
           officeContext.userLocation = locationForOfficeLookup;
         } catch {
@@ -448,10 +454,10 @@ export default function AiAssistantScreen() {
       }
 
       const errorText =
-        error instanceof Error ? error.message : 'May naganap na error. Subukan muli.';
+        error instanceof Error ? error.message : t('common.genericError');
       setMessages((current) => [
         ...current,
-        createMessage('assistant', errorText, createFallbackReply(errorText)),
+        createMessage('assistant', errorText, createLocalizedFallbackReply(t, errorText)),
       ]);
     } finally {
       setIsLoading(false);
@@ -467,17 +473,17 @@ export default function AiAssistantScreen() {
     let location: UserLocation;
 
     try {
-      location = await getUserLocationForAidey();
+      location = await getUserLocationForAidey(locale);
       setUserLocation(location);
-      locationMessage = buildLocationMessage(location);
+      locationMessage = buildLocationMessage(location, locale);
     } catch (error) {
       const errorText =
         error instanceof LocationPermissionError
           ? error.message
-          : 'Hindi makuha ang lokasyon. Subukan muli o i-type ang iyong lungsod.';
+          : t('ai.locationError');
       setMessages((current) => [
         ...current,
-        createMessage('assistant', errorText, createFallbackReply(errorText)),
+        createMessage('assistant', errorText, createLocalizedFallbackReply(t, errorText)),
       ]);
       setIsLoading(false);
       scrollToBottom();
@@ -602,7 +608,7 @@ export default function AiAssistantScreen() {
         right={
           <Pressable
             style={pressableStyle(styles.menuButton, styles.menuButtonPressed)}
-            accessibilityLabel="Menu"
+            accessibilityLabel={t('common.menu')}
             onPress={() => setSidebarVisible(true)}
             hitSlop={8}>
             <SymbolView
@@ -651,13 +657,11 @@ export default function AiAssistantScreen() {
             showsVerticalScrollIndicator={false}>
             {showWelcome ? (
               <View style={styles.welcome}>
-                <Text style={styles.welcomeGreeting}>Kumusta!</Text>
-                <Text style={styles.welcomeText}>
-                  Gabayan kita hakbang-hakbang sa dokumento o ID na kailangan mo.
-                </Text>
+                <Text style={styles.welcomeGreeting}>{t('ai.welcome')}</Text>
+                <Text style={styles.welcomeText}>{t('ai.welcomeText')}</Text>
                 <View style={styles.welcomeSuggestions}>
                   <SuggestedReplies
-                    suggestions={WELCOME_SUGGESTIONS}
+                    suggestions={getWelcomeSuggestions(t)}
                     align="center"
                     onSelect={(suggestion) => void handleSuggestionSelect(suggestion)}
                   />
@@ -719,7 +723,7 @@ export default function AiAssistantScreen() {
             <View style={styles.inputBox}>
               <TextInput
                 style={styles.input}
-                placeholder="I-type ang tanong mo dito..."
+                placeholder={t('ai.placeholder')}
                 placeholderTextColor={colors.secondaryPlaceholder}
                 value={message}
                 onChangeText={setMessage}
@@ -746,14 +750,14 @@ export default function AiAssistantScreen() {
                         createMessage(
                           'assistant',
                           errorMessage,
-                          createFallbackReply(errorMessage),
+                          createLocalizedFallbackReply(t, errorMessage),
                         ),
                       ]);
                     }}
                   />
                   <Pressable
                     style={pressableStyle(styles.iconButton, styles.iconButtonPressed)}
-                    accessibilityLabel="Camera"
+                    accessibilityLabel={t('ai.camera')}
                     disabled={isLoading}
                     hitSlop={8}>
                     <SymbolView
@@ -764,7 +768,7 @@ export default function AiAssistantScreen() {
                   </Pressable>
                   <Pressable
                     style={pressableStyle(styles.iconButton, styles.iconButtonPressed)}
-                    accessibilityLabel="Upload image"
+                    accessibilityLabel={t('ai.uploadImage')}
                     disabled={isLoading}
                     hitSlop={8}>
                     <SymbolView
@@ -781,7 +785,7 @@ export default function AiAssistantScreen() {
                     !canSend && styles.sendButtonDisabled,
                     pressed && canSend && styles.sendButtonPressed,
                   ]}
-                  accessibilityLabel="Send message"
+                  accessibilityLabel={t('ai.sendMessage')}
                   disabled={!canSend}
                   onPress={() => void handleSend()}
                   hitSlop={8}>

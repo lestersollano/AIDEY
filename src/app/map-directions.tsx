@@ -5,17 +5,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { DirectionsMap } from '@/components/directions-map';
 import { ScreenHeader } from '@/components/screen-header';
 import { Text } from '@/components/text';
+import { useTranslation } from '@/contexts/locale-context';
 import { brand, colors } from '@/constants/colors';
 import { fonts } from '@/constants/fonts';
 import { parseMapDirectionsParams } from '@/utils/map-navigation';
 
 export default function MapDirectionsScreen() {
+  const { t } = useTranslation();
   const params = useLocalSearchParams();
   const { destination, userLocation } = parseMapDirectionsParams(params);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <ScreenHeader title={<Text style={styles.title}>Ruta sa Mapa</Text>} />
+      <ScreenHeader title={<Text style={styles.title}>{t('maps.title')}</Text>} />
 
       <View style={styles.details}>
         <Text style={styles.name}>{destination.name}</Text>

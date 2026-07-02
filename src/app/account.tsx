@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/screen-header';
 import { Text } from '@/components/text';
 import { useAuth } from '@/contexts/auth-context';
+import { useTranslation } from '@/contexts/locale-context';
 import { brand, colors } from '@/constants/colors';
 import { fonts } from '@/constants/fonts';
 import { signOut } from '@/services/auth';
@@ -13,6 +14,7 @@ import { getAuthErrorMessage } from '@/utils/auth-errors';
 
 export default function AccountScreen() {
   const { user, isLoading, isConfigured } = useAuth();
+  const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
 
@@ -39,7 +41,7 @@ export default function AccountScreen() {
   if (isLoading || !user) {
     return (
       <SafeAreaView style={styles.container}>
-        <ScreenHeader title={<Text style={styles.headerTitle}>Aking Account</Text>} />
+        <ScreenHeader title={<Text style={styles.headerTitle}>{t('settings.account')}</Text>} />
         <View style={styles.loadingState}>
           <ActivityIndicator color={brand.navy} />
         </View>
@@ -49,29 +51,26 @@ export default function AccountScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScreenHeader title={<Text style={styles.headerTitle}>Aking Account</Text>} />
+      <ScreenHeader title={<Text style={styles.headerTitle}>{t('settings.account')}</Text>} />
 
       <View style={styles.content}>
         <View style={styles.card}>
           <View style={styles.field}>
-            <Text style={styles.label}>Pangalan</Text>
-            <Text style={styles.value}>{user.displayName || 'Walang pangalan'}</Text>
+            <Text style={styles.label}>{t('common.name')}</Text>
+            <Text style={styles.value}>{user.displayName || t('auth.noName')}</Text>
           </View>
 
           <View style={styles.divider} />
 
           <View style={styles.field}>
-            <Text style={styles.label}>Email</Text>
-            <Text style={styles.value}>{user.email || 'Walang email'}</Text>
+            <Text style={styles.label}>{t('common.email')}</Text>
+            <Text style={styles.value}>{user.email || t('auth.noEmail')}</Text>
           </View>
 
           {!isConfigured ? (
             <>
               <View style={styles.divider} />
-              <Text style={styles.noticeText}>
-                Firebase config ay hindi kumpleto. Maaaring hindi gumana ang Storage at Realtime
-                Database sa susunod na setup.
-              </Text>
+              <Text style={styles.noticeText}>{t('auth.firebaseIncomplete')}</Text>
             </>
           ) : null}
         </View>
@@ -89,7 +88,7 @@ export default function AccountScreen() {
           {isSigningOut ? (
             <ActivityIndicator color="#c0392b" />
           ) : (
-            <Text style={styles.signOutButtonText}>Mag-sign out</Text>
+            <Text style={styles.signOutButtonText}>{t('auth.signOut')}</Text>
           )}
         </Pressable>
       </View>

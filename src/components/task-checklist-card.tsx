@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/text';
+import { useTranslation } from '@/contexts/locale-context';
 import { brand, colors } from '@/constants/colors';
 import { fonts } from '@/constants/fonts';
 import type { ChecklistItem } from '@/types/aidey-response';
@@ -13,6 +14,7 @@ type TaskChecklistCardProps = {
 };
 
 export function TaskChecklistCard({ items, onToggleItem }: TaskChecklistCardProps) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
 
   if (items.length === 0) return null;
@@ -26,13 +28,13 @@ export function TaskChecklistCard({ items, onToggleItem }: TaskChecklistCardProp
       <Pressable
         style={({ pressed }) => [styles.headerRow, pressed && styles.headerRowPressed]}
         accessibilityRole="button"
-        accessibilityLabel={expanded ? 'I-minimize ang checklist' : 'Palawakin ang checklist'}
+        accessibilityLabel={expanded ? t('ai.collapseChecklist') : t('ai.expandChecklist')}
         accessibilityState={{ expanded }}
         onPress={() => setExpanded((current) => !current)}>
-        <Text style={styles.title}>Progreso ng Gawain</Text>
+        <Text style={styles.title}>{t('ai.taskProgress')}</Text>
         <View style={styles.headerRight}>
           <Text style={styles.progressLabel}>
-            {doneCount}/{items.length} tapos
+            {t('ai.progressDone', { done: doneCount, total: items.length })}
           </Text>
           <SymbolView
             name={{

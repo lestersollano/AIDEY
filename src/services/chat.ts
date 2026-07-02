@@ -1,5 +1,8 @@
 import { GoogleGenAI } from '@google/genai';
 
+import type { AppLocale } from '@/i18n/types';
+import { getCachedLocale } from '@/contexts/locale-context';
+import { translate } from '@/i18n';
 import { DOCUMENTS } from '@/constants/documents';
 import { getDocumentGuide, getRequirementLabel } from '@/constants/document-guides';
 import type { DocumentGuideProgress } from '@/services/document-guide-progress';
@@ -27,6 +30,7 @@ export type ChatSessionContext = {
     officeAddress?: string;
   };
   checklist?: ChecklistItem[];
+  locale?: AppLocale;
 };
 
 export type ChatReply = AideyReply & {
@@ -51,7 +55,10 @@ const DOCUMENT_CATALOG_LIST = DOCUMENTS.map(
  * app's step-by-step document guides (requirements/steps checklists, section
  * completion) — independent of anything discussed in this chat — so Aidey
  * doesn't re-ask or re-explain things already done. */
-function buildGuideProgressContext(progressByDocument?: Record<string, DocumentGuideProgress>): string {
+function buildGuideProgressContext(
+  progressByDocument?: Record<string, DocumentGuideProgress>,
+  locale: AppLocale = getCachedLocale(),
+): string {
   if (!progressByDocument) return '';
 
   const summaries = Object.entries(progressByDocument)
@@ -62,7 +69,7 @@ function buildGuideProgressContext(progressByDocument?: Record<string, DocumentG
         progress.completedSections.length > 0;
       if (!hasAnyProgress) return null;
 
-      const guide = getDocumentGuide(documentId);
+      const guide = getDocumentGuide(documentId, locale);
       const label = DOCUMENTS.find((document) => document.id === documentId)?.label;
       if (!guide || !label) return null;
 
@@ -104,19 +111,25 @@ function buildGuideProgressContext(progressByDocument?: Record<string, DocumentG
 }
 
 function buildSystemPrompt(context?: ChatSessionContext): string {
+  const locale = context?.locale ?? getCachedLocale();
+  const replyLanguage =
+    locale === 'en-US'
+      ? 'Reply in English (US). '
+      : 'Reply in Filipino (Tagalog). ';
+
   const documentContext = context?.documentLabel
     ? `The user is trying to obtain: ${context.documentLabel}. Keep guiding them toward that goal.`
     : 'Help the user obtain the government document or ID they need.';
 
   const ownedDocumentLabels = context?.ownedDocumentIds
     ?.map((id) => DOCUMENTS.find((document) => document.id === id)?.label)
-    .filter((label): label is string => Boolean(label));
+    .filter((label): label is NonNullable<typeof label> => Boolean(label));
 
   const ownedDocumentsContext = ownedDocumentLabels?.length
     ? `The user already has these saved in their document catalogue: ${ownedDocumentLabels.join(', ')}. Treat these as documents/IDs the user already possesses — do NOT ask if they already have them or tell them how to get them from scratch; only offer to help with renewal, replacement, or using them as a requirement for something else if relevant. `
     : 'The user has not saved any documents in their catalogue yet. ';
 
-  const guideProgressContext = buildGuideProgressContext(context?.documentGuideProgress);
+  const guideProgressContext = buildGuideProgressContext(context?.documentGuideProgress, locale);
 
   const checklistContext = context?.checklist?.length
     ? `The task checklist so far (id/label/done) is: ${JSON.stringify(context.checklist)}. Return this EXACT list of items (same ids, same labels, same order) in your checklist field every time, only flipping "done" to true when that milestone is actually completed. Never rename, remove, reorder, or add items to an existing checklist unless the user's goal changes to something else entirely. `
@@ -137,7 +150,8 @@ function buildSystemPrompt(context?: ChatSessionContext): string {
     `${guideProgressContext}` +
     `${checklistContext}` +
     `${arrivalContext}` +
-    'Reply in the same language the user writes in (Tagalog or English). ' +
+    replyLanguage +
+    'If the user writes in a different language, you may match their language instead. ' +
     'You MUST respond with JSON matching the provided schema. ' +
     'Rules: ' +
     '(1) Give ONE short step or ONE question per reply — never long paragraphs or numbered lists in message (the arrival congratulation + instruction in rule 6 is the only exception, and it must still be brief). ' +
@@ -218,7 +232,7 @@ async function sendMessageWithModel(
   const text = response.text?.trim();
 
   if (!text) {
-    throw new Error('Walang natanggap na sagot mula sa AI.');
+    throw new Error(translate(context?.locale ?? getCachedLocale(), 'ai.noAiResponse'));
   }
 
   return normalizeReply(text);

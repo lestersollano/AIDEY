@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AideyWordmark } from '@/components/aidey-wordmark';
 import { Text, TextInput } from '@/components/text';
 import { useAuth } from '@/contexts/auth-context';
+import { useTranslation } from '@/contexts/locale-context';
 import { brand, colors } from '@/constants/colors';
 import { fonts } from '@/constants/fonts';
 import { signInWithEmail, signUpWithEmail } from '@/services/auth';
@@ -24,6 +25,7 @@ type AuthMode = 'sign-in' | 'sign-up';
 
 export default function SignInScreen() {
   const { isConfigured } = useAuth();
+  const { t } = useTranslation();
   const [mode, setMode] = useState<AuthMode>('sign-in');
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -63,9 +65,7 @@ export default function SignInScreen() {
           <View style={styles.hero}>
             <AideyWordmark style={styles.wordmark} />
             <Text style={styles.tagline}>
-              {mode === 'sign-up'
-                ? 'Gumawa ng account para simulan ang iyong gabay sa dokumento at ID.'
-                : 'Mag-sign in para magpatuloy sa Aidey.'}
+              {mode === 'sign-up' ? t('auth.signUpTagline') : t('auth.signInTagline')}
             </Text>
           </View>
 
@@ -77,21 +77,18 @@ export default function SignInScreen() {
 
           {!isConfigured ? (
             <View style={styles.noticeCard}>
-              <Text style={styles.noticeTitle}>Kailangan ng Firebase setup</Text>
-              <Text style={styles.noticeText}>
-                Idagdag ang Firebase config sa `.env` file mo bago mag-sign in. Tingnan ang
-                `.env.example` para sa mga kailangang variable.
-              </Text>
+              <Text style={styles.noticeTitle}>{t('auth.firebaseSetupTitle')}</Text>
+              <Text style={styles.noticeText}>{t('auth.firebaseSetupBody')}</Text>
             </View>
           ) : null}
 
           {mode === 'sign-up' ? (
             <View style={styles.field}>
-              <Text style={styles.label}>Pangalan</Text>
+              <Text style={styles.label}>{t('common.name')}</Text>
               <TextInput
                 value={displayName}
                 onChangeText={setDisplayName}
-                placeholder="Hal. Juan Dela Cruz"
+                placeholder={t('auth.namePlaceholder')}
                 placeholderTextColor={colors.secondaryPlaceholder}
                 autoCapitalize="words"
                 autoCorrect={false}
@@ -101,7 +98,7 @@ export default function SignInScreen() {
           ) : null}
 
           <View style={styles.field}>
-            <Text style={styles.label}>Email</Text>
+            <Text style={styles.label}>{t('common.email')}</Text>
             <TextInput
               value={email}
               onChangeText={setEmail}
@@ -115,11 +112,11 @@ export default function SignInScreen() {
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Password</Text>
+            <Text style={styles.label}>{t('common.password')}</Text>
             <TextInput
               value={password}
               onChangeText={setPassword}
-              placeholder="Hindi bababa sa 6 na character"
+              placeholder={t('auth.passwordPlaceholder')}
               placeholderTextColor={colors.secondaryPlaceholder}
               secureTextEntry
               autoCapitalize="none"
@@ -142,7 +139,7 @@ export default function SignInScreen() {
               <ActivityIndicator color={colors.primary} />
             ) : (
               <Text style={styles.primaryButtonText}>
-                {mode === 'sign-up' ? 'Gumawa ng account' : 'Mag-sign in'}
+                {mode === 'sign-up' ? t('auth.createAccount') : t('auth.signIn')}
               </Text>
             )}
           </Pressable>
@@ -155,9 +152,7 @@ export default function SignInScreen() {
               setMode((current) => (current === 'sign-in' ? 'sign-up' : 'sign-in'));
             }}>
             <Text style={styles.switchModeText}>
-              {mode === 'sign-in'
-                ? 'Wala pang account? Gumawa ng bago'
-                : 'May account na? Mag-sign in'}
+              {mode === 'sign-in' ? t('auth.noAccount') : t('auth.hasAccount')}
             </Text>
           </Pressable>
         </ScrollView>

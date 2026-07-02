@@ -1,21 +1,25 @@
-const authErrorMessages: Record<string, string> = {
-  'auth/email-already-in-use': 'May account na gamit ang email na ito.',
-  'auth/invalid-email': 'Hindi wasto ang email address.',
-  'auth/operation-not-allowed': 'Hindi pa naka-enable ang sign-in method na ito sa Firebase.',
-  'auth/weak-password': 'Dapat hindi bababa sa 6 na character ang password.',
-  'auth/user-disabled': 'Na-disable ang account na ito.',
-  'auth/user-not-found': 'Walang account na tumutugma sa email at password.',
-  'auth/wrong-password': 'Mali ang email o password.',
-  'auth/invalid-credential': 'Mali ang email o password.',
-  'auth/too-many-requests': 'Masyadong maraming pagtatangka. Subukan muli mamaya.',
-  'auth/network-request-failed': 'May problema sa internet. Suriin ang koneksyon mo.',
+import { getCachedLocale } from '@/contexts/locale-context';
+import { translate } from '@/i18n';
+
+const authErrorKeys: Record<string, string> = {
+  'auth/email-already-in-use': 'auth.errors.auth/email-already-in-use',
+  'auth/invalid-email': 'auth.errors.auth/invalid-email',
+  'auth/operation-not-allowed': 'auth.errors.auth/operation-not-allowed',
+  'auth/weak-password': 'auth.errors.auth/weak-password',
+  'auth/user-disabled': 'auth.errors.auth/user-disabled',
+  'auth/user-not-found': 'auth.errors.auth/user-not-found',
+  'auth/wrong-password': 'auth.errors.auth/wrong-password',
+  'auth/invalid-credential': 'auth.errors.auth/invalid-credential',
+  'auth/too-many-requests': 'auth.errors.auth/too-many-requests',
+  'auth/network-request-failed': 'auth.errors.auth/network-request-failed',
 };
 
-export function getAuthErrorMessage(error: unknown): string {
+export function getAuthErrorMessage(error: unknown, locale = getCachedLocale()): string {
   if (error && typeof error === 'object' && 'code' in error) {
     const code = String(error.code);
-    if (authErrorMessages[code]) {
-      return authErrorMessages[code];
+    const key = authErrorKeys[code];
+    if (key) {
+      return translate(locale, key);
     }
   }
 
@@ -23,5 +27,5 @@ export function getAuthErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return 'May naganap na error. Subukan muli.';
+  return translate(locale, 'common.genericError');
 }

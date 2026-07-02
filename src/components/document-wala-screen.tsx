@@ -4,11 +4,12 @@ import { SymbolView } from 'expo-symbols';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { getDocumentHelpPrompt } from '@/constants/documents';
 import { ScreenHeader } from '@/components/screen-header';
 import { Text } from '@/components/text';
+import { useTranslation } from '@/contexts/locale-context';
 import { brand, colors } from '@/constants/colors';
 import { fonts } from '@/constants/fonts';
+import { getDocumentHelpPrompt } from '@/i18n/ai-helpers';
 
 type DocumentWalaScreenProps = {
   documentId: string;
@@ -16,11 +17,11 @@ type DocumentWalaScreenProps = {
 };
 
 export function DocumentWalaScreen({ documentId, title }: DocumentWalaScreenProps) {
+  const { t } = useTranslation();
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScreenHeader
-        title={<Text style={styles.headerTitle}>{title}</Text>}
-      />
+      <ScreenHeader title={<Text style={styles.headerTitle}>{title}</Text>} />
 
       <ScrollView
         style={styles.scrollArea}
@@ -32,22 +33,19 @@ export function DocumentWalaScreen({ documentId, title }: DocumentWalaScreenProp
             style={styles.mascot}
             contentFit="contain"
           />
-          <Text style={styles.heading}>WALA pa akong {title}</Text>
-          <Text style={styles.message}>
-            Tutulungan ka namin hakbang-hakbang — mula sa mga kinakailangan hanggang sa
-            direksyon sa pinakamalapit na opisina gamit ang mapa.
-          </Text>
+          <Text style={styles.heading}>{t('documents.dontHave', { title })}</Text>
+          <Text style={styles.message}>{t('documents.walaMessage')}</Text>
         </View>
 
         <Pressable
           style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
           accessibilityRole="button"
-          accessibilityLabel="Magpatulong sa Aidey AI"
+          accessibilityLabel={t('documents.walaAiButton')}
           onPress={() =>
             router.push({
               pathname: '/ai-assistant',
               params: {
-                prompt: getDocumentHelpPrompt(title),
+                prompt: getDocumentHelpPrompt(t, title),
                 documentLabel: title,
                 documentId,
               },
@@ -64,7 +62,7 @@ export function DocumentWalaScreen({ documentId, title }: DocumentWalaScreenProp
               tintColor={colors.primary}
             />
           </View>
-          <Text style={styles.buttonText}>Magpatulong sa Aidey AI</Text>
+          <Text style={styles.buttonText}>{t('documents.walaAiButton')}</Text>
           <SymbolView
             name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }}
             size={16}
@@ -78,7 +76,7 @@ export function DocumentWalaScreen({ documentId, title }: DocumentWalaScreenProp
             pressed && styles.secondaryButtonPressed,
           ]}
           accessibilityRole="button"
-          accessibilityLabel="Sundin na lang ang hakbang-hakbang"
+          accessibilityLabel={t('documents.walaStepsButton')}
           onPress={() => router.push(`/documents/${documentId}/steps`)}>
           <View style={styles.secondaryButtonIcon}>
             <SymbolView
@@ -87,7 +85,7 @@ export function DocumentWalaScreen({ documentId, title }: DocumentWalaScreenProp
               tintColor={brand.navy}
             />
           </View>
-          <Text style={styles.secondaryButtonText}>Sundin na lang ang hakbang-hakbang</Text>
+          <Text style={styles.secondaryButtonText}>{t('documents.walaStepsButton')}</Text>
           <SymbolView
             name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }}
             size={16}

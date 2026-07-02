@@ -5,6 +5,7 @@ import { MapActionCard } from '@/components/map-action-card';
 import { SuggestedReplies } from '@/components/suggested-replies';
 import { TaskCompletionCard } from '@/components/task-completion-card';
 import { Text } from '@/components/text';
+import { useTranslation } from '@/contexts/locale-context';
 import { brand, colors } from '@/constants/colors';
 import { fonts } from '@/constants/fonts';
 import type { AideyReply, Suggestion } from '@/types/aidey-response';
@@ -117,9 +118,13 @@ export function AssistantStepMessage({
   onFinishTask,
   onAddToGallery,
 }: AssistantStepMessageProps) {
+  const { t } = useTranslation();
   const mood = getAssistantMood(reply.message);
   const stepLabel = reply.step
-    ? reply.step.label ?? `Hakbang ${reply.step.current}${reply.step.total ? ` ng ${reply.step.total}` : ''}`
+    ? reply.step.label ??
+      (reply.step.total
+        ? t('ai.stepLabel', { current: reply.step.current, total: reply.step.total })
+        : t('ai.stepLabelShort', { current: reply.step.current }))
     : null;
 
   return (

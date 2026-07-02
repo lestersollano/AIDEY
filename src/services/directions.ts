@@ -1,3 +1,6 @@
+import { getCachedLocale } from '@/contexts/locale-context';
+import { translate } from '@/i18n';
+import type { AppLocale } from '@/i18n/types';
 import { getGoogleMapsApiKey } from '@/constants/maps';
 import { decodePolyline } from '@/utils/polyline';
 import type { UserCoordinates } from '@/utils/maps';
@@ -39,49 +42,38 @@ function parseDurationSeconds(duration?: string) {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-function mapRoutesApiError(message: string) {
+function mapRoutesApiError(message: string, locale: AppLocale) {
   const normalized = message.toLowerCase();
 
   if (normalized.includes('routes api has not been used') || normalized.includes('disabled')) {
-    return new DirectionsError(
-      message,
-      'I-enable ang Routes API sa Google Cloud Console para sa ruta sa mapa.',
-    );
+    return new DirectionsError(message, translate(locale, 'maps.errors.enableRoutesApi'));
   }
 
   if (normalized.includes('billing')) {
-    return new DirectionsError(
-      message,
-      'Kailangan i-enable ang billing sa Google Cloud project para sa Google Maps.',
-    );
+    return new DirectionsError(message, translate(locale, 'maps.errors.enableBilling'));
   }
 
   if (normalized.includes('legacy api')) {
-    return new DirectionsError(
-      message,
-      'I-enable ang Routes API (hindi ang legacy Directions API) sa Google Cloud Console.',
-    );
+    return new DirectionsError(message, translate(locale, 'maps.errors.useRoutesApi'));
   }
 
   if (normalized.includes('api key') || normalized.includes('permission')) {
-    return new DirectionsError(
-      message,
-      'Hindi valid ang Google Maps API key o wala itong access sa Routes API.',
-    );
+    return new DirectionsError(message, translate(locale, 'maps.errors.invalidApiKey'));
   }
 
-  return new DirectionsError(message, 'Hindi ma-load ang ruta sa mapa.');
+  return new DirectionsError(message, translate(locale, 'maps.errors.loadRoute'));
 }
 
 export async function fetchDrivingRoute(
   origin: UserCoordinates,
   destination: UserCoordinates,
+  locale: AppLocale = getCachedLocale(),
 ): Promise<DrivingRoute> {
   const apiKey = getGoogleMapsApiKey();
   if (!apiKey) {
     throw new DirectionsError(
       'Missing Google Maps API key.',
-      'Idagdag ang EXPO_PUBLIC_GOOGLE_MAPS_API_KEY para sa ruta.',
+      translate(locale, 'maps.errors.missingApiKey'),
     );
   }
 
@@ -112,7 +104,7 @@ export async function fetchDrivingRoute(
       },
       travelMode: 'DRIVE',
       routingPreference: 'TRAFFIC_UNAWARE',
-      languageCode: 'fil',
+      languageCode: locale === 'en-US' ? 'en' : 'fil',
       regionCode: 'PH',
       units: 'METRIC',
     }),
@@ -121,7 +113,7 @@ export async function fetchDrivingRoute(
   const data = (await response.json()) as RoutesApiResponse;
 
   if (!response.ok || data.error) {
-    throw mapRoutesApiError(data.error?.message ?? `Routes API HTTP ${response.status}`);
+    throw mapRoutesApiError(data.error?.message ?? `Routes API HTTP ${response.status}`, locale);
   }
 
   const route = data.routes?.[0];
@@ -130,7 +122,7 @@ export async function fetchDrivingRoute(
   if (!encodedPolyline) {
     throw new DirectionsError(
       'Routes API returned no polyline.',
-      'Walang nahanap na ruta mula sa iyong lokasyon papunta sa opisina.',
+      translate(locale, 'maps.errors.noRoute'),
     );
   }
 
@@ -141,8 +133,11 @@ export async function fetchDrivingRoute(
   };
 }
 
-export function getDirectionsErrorMessage(error: unknown) {
+export function getDirectionsErrorMessage(
+  error: unknown,
+  locale: AppLocale = getCachedLocale(),
+) {
   if (error instanceof DirectionsError) return error.userMessage;
   if (error instanceof Error) return error.message;
-  return 'Hindi ma-load ang ruta sa mapa.';
+  return translate(locale, 'maps.errors.loadRoute');
 }

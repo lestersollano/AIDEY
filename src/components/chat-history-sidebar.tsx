@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/text';
+import { useTranslation } from '@/contexts/locale-context';
 import { brand, colors } from '@/constants/colors';
 import { fonts } from '@/constants/fonts';
 import { isChecklistComplete, type ChatSessionSummary } from '@/services/chat-sessions';
@@ -41,6 +42,7 @@ export function ChatHistorySidebar({
   onSelectSession,
   onArchiveSession,
 }: ChatHistorySidebarProps) {
+  const { t } = useTranslation();
   const translateX = useRef(new Animated.Value(SIDEBAR_WIDTH)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const [archivedExpanded, setArchivedExpanded] = useState(false);
@@ -101,7 +103,7 @@ export function ChatHistorySidebar({
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <View style={styles.root}>
         <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
-          <Pressable style={StyleSheet.absoluteFill} accessibilityLabel="Isara" onPress={onClose} />
+          <Pressable style={StyleSheet.absoluteFill} accessibilityLabel={t('common.close')} onPress={onClose} />
         </Animated.View>
 
         <Animated.View
@@ -110,27 +112,27 @@ export function ChatHistorySidebar({
             <Pressable
               style={({ pressed }) => [styles.backRow, pressed && styles.backRowPressed]}
               accessibilityRole="button"
-              accessibilityLabel="Back"
+              accessibilityLabel={t('common.back')}
               onPress={onClose}>
               <SymbolView
                 name={{ ios: 'chevron.right', android: 'arrow_forward', web: 'arrow_forward' }}
                 size={20}
                 tintColor={colors.secondary}
               />
-              <Text style={styles.backText}>Back</Text>
+              <Text style={styles.backText}>{t('common.back')}</Text>
             </Pressable>
 
             <Pressable
               style={({ pressed }) => [styles.newChatButton, pressed && styles.newChatButtonPressed]}
               accessibilityRole="button"
-              accessibilityLabel="New Chat"
+              accessibilityLabel={t('ai.newChat')}
               onPress={onNewChat}>
               <SymbolView
                 name={{ ios: 'plus', android: 'add', web: 'add' }}
                 size={18}
                 tintColor={colors.primary}
               />
-              <Text style={styles.newChatText}>New Chat</Text>
+              <Text style={styles.newChatText}>{t('ai.newChat')}</Text>
             </Pressable>
 
             <FlatList
@@ -142,7 +144,7 @@ export function ChatHistorySidebar({
               }
               showsVerticalScrollIndicator={false}
               ListEmptyComponent={
-                <Text style={styles.emptyText}>Wala pang nakaraang chat.</Text>
+                <Text style={styles.emptyText}>{t('ai.noChats')}</Text>
               }
               renderItem={({ item: row }) => {
                 if (row.type === 'archivedHeader') {
@@ -154,7 +156,7 @@ export function ChatHistorySidebar({
                       ]}
                       accessibilityRole="button"
                       accessibilityLabel={
-                        archivedExpanded ? 'I-minimize ang archived' : 'Ipakita ang archived'
+                        archivedExpanded ? t('ai.collapseArchived') : t('ai.expandArchived')
                       }
                       accessibilityState={{ expanded: archivedExpanded }}
                       onPress={() => setArchivedExpanded((current) => !current)}>
@@ -164,7 +166,7 @@ export function ChatHistorySidebar({
                         tintColor={colors.secondary}
                       />
                       <Text style={styles.archivedHeaderText}>
-                        Naka-archive ({row.count})
+                        {t('ai.archived', { count: row.count })}
                       </Text>
                       <SymbolView
                         name={{
@@ -228,7 +230,7 @@ export function ChatHistorySidebar({
                       ]}
                       accessibilityRole="button"
                       accessibilityLabel={
-                        item.archived ? 'I-unarchive ang chat' : 'I-archive ang chat'
+                        item.archived ? t('ai.unarchiveChat') : t('ai.archiveChat')
                       }
                       hitSlop={8}
                       onPress={(event) => {

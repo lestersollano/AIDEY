@@ -7,8 +7,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/screen-header';
 import { Text } from '@/components/text';
 import { useAuth } from '@/contexts/auth-context';
+import { useTranslation } from '@/contexts/locale-context';
 import { brand, colors } from '@/constants/colors';
 import { fonts } from '@/constants/fonts';
+import { LOCALE_LABELS } from '@/i18n/types';
 
 type SymbolViewName = ComponentProps<typeof SymbolView>['name'];
 type PlatformSymbolName = Extract<SymbolViewName, { ios?: unknown }>;
@@ -19,43 +21,6 @@ type SettingsOption = {
   subtitle?: string;
   icon: PlatformSymbolName;
 };
-
-const generalOptions: SettingsOption[] = [
-  {
-    id: 'account',
-    label: 'Aking Account',
-    icon: { ios: 'person.circle', android: 'person', web: 'person' },
-  },
-  {
-    id: 'notifications',
-    label: 'Mga Abiso',
-    icon: { ios: 'bell', android: 'notifications', web: 'notifications' },
-  },
-  {
-    id: 'language',
-    label: 'Wika',
-    subtitle: 'Filipino',
-    icon: { ios: 'globe', android: 'language', web: 'language' },
-  },
-];
-
-const supportOptions: SettingsOption[] = [
-  {
-    id: 'help',
-    label: 'Tulong',
-    icon: { ios: 'questionmark.circle', android: 'help', web: 'help' },
-  },
-  {
-    id: 'privacy',
-    label: 'Privacy Policy',
-    icon: { ios: 'hand.raised', android: 'privacy_tip', web: 'privacy_tip' },
-  },
-  {
-    id: 'about',
-    label: 'Tungkol sa Aidey',
-    icon: { ios: 'info.circle', android: 'info', web: 'info' },
-  },
-];
 
 function SettingsRow({
   option,
@@ -114,12 +79,50 @@ function SettingsSection({
 
 export default function SettingsScreen() {
   const { user } = useAuth();
+  const { locale, t } = useTranslation();
+
+  const generalOptions: SettingsOption[] = [
+    {
+      id: 'account',
+      label: t('settings.account'),
+      icon: { ios: 'person.circle', android: 'person', web: 'person' },
+    },
+    {
+      id: 'notifications',
+      label: t('settings.notifications'),
+      icon: { ios: 'bell', android: 'notifications', web: 'notifications' },
+    },
+    {
+      id: 'language',
+      label: t('settings.language'),
+      subtitle: LOCALE_LABELS[locale],
+      icon: { ios: 'globe', android: 'language', web: 'language' },
+    },
+  ];
+
+  const supportOptions: SettingsOption[] = [
+    {
+      id: 'help',
+      label: t('settings.help'),
+      icon: { ios: 'questionmark.circle', android: 'help', web: 'help' },
+    },
+    {
+      id: 'privacy',
+      label: t('settings.privacyPolicy'),
+      icon: { ios: 'hand.raised', android: 'privacy_tip', web: 'privacy_tip' },
+    },
+    {
+      id: 'about',
+      label: t('settings.about'),
+      icon: { ios: 'info.circle', android: 'info', web: 'info' },
+    },
+  ];
 
   const generalOptionsWithAccount: SettingsOption[] = generalOptions.map((option) =>
     option.id === 'account'
       ? {
           ...option,
-          subtitle: user?.email ?? 'Mag-sign in',
+          subtitle: user?.email ?? t('common.signIn'),
         }
       : option,
   );
@@ -127,13 +130,15 @@ export default function SettingsScreen() {
   function handleOptionPress(option: SettingsOption) {
     if (option.id === 'account') {
       router.push('/account');
+    } else if (option.id === 'language') {
+      router.push('/language');
     }
   }
 
   return (
     <SafeAreaView style={styles.container}>
       <ScreenHeader
-        title={<Text style={styles.headerTitle}>Settings</Text>}
+        title={<Text style={styles.headerTitle}>{t('settings.title')}</Text>}
       />
 
       <View style={styles.scrollContainer}>
@@ -142,11 +147,11 @@ export default function SettingsScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}>
           <SettingsSection
-            title="Pangkalahatan"
+            title={t('settings.general')}
             options={generalOptionsWithAccount}
             onOptionPress={handleOptionPress}
           />
-          <SettingsSection title="Suporta" options={supportOptions} />
+          <SettingsSection title={t('settings.support')} options={supportOptions} />
         </ScrollView>
       </View>
     </SafeAreaView>

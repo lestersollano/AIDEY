@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { useTranslation } from '@/contexts/locale-context';
 import { colors } from '@/constants/colors';
 
 const HEADER_SIDE_WIDTH = 40;
@@ -13,12 +14,14 @@ type ScreenHeaderProps = {
 };
 
 export function ScreenHeader({ title, right }: ScreenHeaderProps) {
+  const { t } = useTranslation();
+
   return (
     <View style={styles.header}>
       <View style={styles.side}>
         <Pressable
           style={styles.backButton}
-          accessibilityLabel="Back"
+          accessibilityLabel={t('common.back')}
           onPress={() => router.back()}>
           <SymbolView
             name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }}

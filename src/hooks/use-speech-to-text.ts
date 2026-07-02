@@ -1,3 +1,6 @@
+import { getCachedLocale } from '@/contexts/locale-context';
+import { translate } from '@/i18n';
+import type { AppLocale } from '@/i18n/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -32,10 +35,12 @@ async function persistLanguage(language: SpeechLanguage) {
   }
 }
 
+export function syncSpeechLanguageWithAppLocale(locale: AppLocale) {
+  void persistLanguage(locale);
+}
+
 type UseSpeechToTextOptions = {
-  /** Called with the final recognized transcript. */
   onResult: (transcript: string) => void;
-  /** Called with a user-facing (Filipino) error message. */
   onError?: (message: string) => void;
 };
 
@@ -84,14 +89,14 @@ export function useSpeechToText({ onResult, onError }: UseSpeechToTextOptions) {
       return;
     }
 
+    const locale = getCachedLocale();
+
     if (event.error === 'not-allowed') {
-      onErrorRef.current?.(
-        'Kailangan ng pahintulot sa microphone para gumana ang speech-to-text.',
-      );
+      onErrorRef.current?.(translate(locale, 'speech.micPermission'));
       return;
     }
 
-    onErrorRef.current?.('Hindi na-proseso ang boses. Subukan muli.');
+    onErrorRef.current?.(translate(locale, 'speech.processError'));
   });
 
   const setLanguage = useCallback((next: SpeechLanguage) => {
@@ -107,12 +112,12 @@ export function useSpeechToText({ onResult, onError }: UseSpeechToTextOptions) {
   }, []);
 
   const start = useCallback(async () => {
+    const locale = getCachedLocale();
+
     try {
       const permission = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
       if (!permission.granted) {
-        onErrorRef.current?.(
-          'Kailangan ng pahintulot sa microphone para gumana ang speech-to-text.',
-        );
+        onErrorRef.current?.(translate(locale, 'speech.micPermission'));
         return;
       }
 
@@ -122,7 +127,7 @@ export function useSpeechToText({ onResult, onError }: UseSpeechToTextOptions) {
         continuous: false,
       });
     } catch {
-      onErrorRef.current?.('Hindi ma-simulan ang speech-to-text. Subukan muli.');
+      onErrorRef.current?.(translate(locale, 'speech.startError'));
     }
   }, [language]);
 

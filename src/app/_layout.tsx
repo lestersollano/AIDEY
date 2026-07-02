@@ -10,6 +10,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { AuthGate } from '@/components/auth-gate';
 import { InternetErrorListener } from '@/components/internet-error-listener';
 import { AuthProvider } from '@/contexts/auth-context';
+import { LocaleProvider } from '@/contexts/locale-context';
 import { colors } from '@/constants/colors';
 
 const fadeScreenOptions = {
@@ -40,8 +41,9 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <KeyboardProvider>
+    <LocaleProvider>
+      <AuthProvider>
+        <KeyboardProvider>
         <View style={styles.root}>
           {Platform.OS === 'android' && (
             <RNStatusBar barStyle="dark-content" backgroundColor={colors.primary} />
@@ -58,6 +60,7 @@ export default function RootLayout() {
               <Stack.Screen name="sign-in" options={fadeScreenOptions} />
               <Stack.Screen name="account" options={fadeScreenOptions} />
               <Stack.Screen name="settings" options={fadeScreenOptions} />
+              <Stack.Screen name="language" options={fadeScreenOptions} />
               <Stack.Screen name="ai-assistant" options={fadeScreenOptions} />
               <Stack.Screen name="map-directions" options={fadeScreenOptions} />
               <Stack.Screen name="documents/index" options={fadeScreenOptions} />
@@ -69,8 +72,9 @@ export default function RootLayout() {
           </AuthGate>
           <InternetErrorListener />
         </View>
-      </KeyboardProvider>
-    </AuthProvider>
+        </KeyboardProvider>
+      </AuthProvider>
+    </LocaleProvider>
   );
 }
 

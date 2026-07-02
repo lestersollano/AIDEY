@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/text';
+import { useTranslation } from '@/contexts/locale-context';
 import { brand, colors } from '@/constants/colors';
 import { fonts } from '@/constants/fonts';
 import {
@@ -22,6 +23,7 @@ type DocumentUploadPanelProps = {
 };
 
 export function DocumentUploadPanel({ documentId, title, onImagesChange }: DocumentUploadPanelProps) {
+  const { t } = useTranslation();
   const [images, setImages] = useState<DocumentImageRecord[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
@@ -45,23 +47,20 @@ export function DocumentUploadPanel({ documentId, title, onImagesChange }: Docum
         refresh();
       } catch (error) {
         console.warn('Failed to save document image', error);
-        Alert.alert(
-          'Hindi ma-save ang larawan',
-          'Pakisubukang muli. Siguraduhing may sapat na espasyo ang iyong device.',
-        );
+        Alert.alert(t('documents.upload.saveError'), t('documents.upload.saveErrorBody'));
       } finally {
         setIsSaving(false);
       }
     },
-    [documentId, refresh],
+    [documentId, refresh, t],
   );
 
   const handleRemoveImage = useCallback(
     (image: DocumentImageRecord) => {
-      Alert.alert('Alisin ang larawan?', 'Hindi na ito maibabalik pagkatapos alisin.', [
-        { text: 'Kanselahin', style: 'cancel' },
+      Alert.alert(t('documents.upload.removeTitle'), t('documents.upload.removeBody'), [
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Alisin',
+          text: t('common.remove'),
           style: 'destructive',
           onPress: async () => {
             setRemovingId(image.id);
@@ -71,7 +70,7 @@ export function DocumentUploadPanel({ documentId, title, onImagesChange }: Docum
               refresh();
             } catch (error) {
               console.warn('Failed to remove document image', error);
-              Alert.alert('Hindi maalis ang larawan', 'Pakisubukang muli.');
+              Alert.alert(t('documents.upload.removeError'), t('common.genericError'));
             } finally {
               setRemovingId(null);
             }
@@ -79,17 +78,14 @@ export function DocumentUploadPanel({ documentId, title, onImagesChange }: Docum
         },
       ]);
     },
-    [documentId, refresh],
+    [documentId, refresh, t],
   );
 
   const handleTakePhoto = useCallback(async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
 
     if (!permission.granted) {
-      Alert.alert(
-        'Kailangan ng pahintulot',
-        'Bigyan ng access sa camera ang Aidey para makakuha ng larawan.',
-      );
+      Alert.alert(t('documents.upload.permissionTitle'), t('documents.upload.cameraPermission'));
       return;
     }
 
@@ -101,16 +97,13 @@ export function DocumentUploadPanel({ documentId, title, onImagesChange }: Docum
     if (!result.canceled && result.assets[0]) {
       await persistImage(result.assets[0].uri);
     }
-  }, [persistImage]);
+  }, [persistImage, t]);
 
   const handlePickFromLibrary = useCallback(async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (!permission.granted) {
-      Alert.alert(
-        'Kailangan ng pahintulot',
-        'Bigyan ng access sa photos ang Aidey para makapili ng larawan.',
-      );
+      Alert.alert(t('documents.upload.permissionTitle'), t('documents.upload.photosPermission'));
       return;
     }
 
@@ -123,7 +116,7 @@ export function DocumentUploadPanel({ documentId, title, onImagesChange }: Docum
     if (!result.canceled && result.assets[0]) {
       await persistImage(result.assets[0].uri);
     }
-  }, [persistImage]);
+  }, [persistImage, t]);
 
   const hasImages = images.length > 0;
 
@@ -140,7 +133,7 @@ export function DocumentUploadPanel({ documentId, title, onImagesChange }: Docum
                 disabled={removingId === image.id}
                 onPress={() => handleRemoveImage(image)}
                 accessibilityRole="button"
-                accessibilityLabel="Alisin ang larawan">
+                accessibilityLabel={t('documents.upload.removeA11y')}>
                 {removingId === image.id ? (
                   <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
@@ -173,7 +166,7 @@ export function DocumentUploadPanel({ documentId, title, onImagesChange }: Docum
         disabled={isSaving}
         onPress={handleTakePhoto}
         accessibilityRole="button"
-        accessibilityLabel={`Kuhanan ng larawan ang ${title}`}>
+        accessibilityLabel={t('documents.upload.takePhoto', { title })}>
         <View style={styles.uploadIcon}>
           <SymbolView
             name={{ ios: 'camera.fill', android: 'photo_camera', web: 'photo_camera' }}
@@ -183,9 +176,11 @@ export function DocumentUploadPanel({ documentId, title, onImagesChange }: Docum
         </View>
         <View style={styles.uploadText}>
           <Text style={styles.uploadLabel}>
-            {hasImages ? 'Kumuha pa ng larawan' : `Kunan ng larawan ang ${title}`}
+            {hasImages
+              ? t('documents.upload.takeMore')
+              : t('documents.upload.takePhoto', { title })}
           </Text>
-          <Text style={styles.uploadHint}>Pindutin para gamitin ang camera</Text>
+          <Text style={styles.uploadHint}>{t('documents.upload.cameraHint')}</Text>
         </View>
         {isSaving ? (
           <ActivityIndicator color={brand.navy} />
@@ -203,7 +198,7 @@ export function DocumentUploadPanel({ documentId, title, onImagesChange }: Docum
         disabled={isSaving}
         onPress={handlePickFromLibrary}
         accessibilityRole="button"
-        accessibilityLabel={`I-upload ang ${title}`}>
+        accessibilityLabel={t('documents.upload.uploadPhoto', { title })}>
         <View style={styles.uploadIcon}>
           <SymbolView
             name={{ ios: 'photo.fill', android: 'image', web: 'image' }}
@@ -213,9 +208,11 @@ export function DocumentUploadPanel({ documentId, title, onImagesChange }: Docum
         </View>
         <View style={styles.uploadText}>
           <Text style={styles.uploadLabel}>
-            {hasImages ? 'Mag-upload pa ng larawan' : `I-upload ang ${title}`}
+            {hasImages
+              ? t('documents.upload.uploadMore')
+              : t('documents.upload.uploadPhoto', { title })}
           </Text>
-          <Text style={styles.uploadHint}>Pindutin para pumili ng larawan</Text>
+          <Text style={styles.uploadHint}>{t('documents.upload.libraryHint')}</Text>
         </View>
         {isSaving ? (
           <ActivityIndicator color={brand.navy} />

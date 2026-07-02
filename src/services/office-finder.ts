@@ -4,6 +4,9 @@ import {
   type GovernmentAgency,
 } from '@/constants/government-offices';
 import { getGoogleMapsApiKey } from '@/constants/maps';
+import { getCachedLocale } from '@/contexts/locale-context';
+import { translate } from '@/i18n';
+import type { AppLocale } from '@/i18n/types';
 import type { ChatMessage } from '@/services/chat';
 import type { UserLocation } from '@/services/location';
 import type { AideyReply, MapDestination, Suggestion } from '@/types/aidey-response';
@@ -253,24 +256,40 @@ async function resolveOfficeDestination(
   return null;
 }
 
-function ensureOpenMapsSuggestion(suggestions: Suggestion[]): Suggestion[] {
+function ensureOpenMapsSuggestion(
+  suggestions: Suggestion[],
+  locale: AppLocale = getCachedLocale(),
+): Suggestion[] {
   const hasOpenMaps = suggestions.some((item) => item.action === 'open_maps');
   if (hasOpenMaps) return suggestions;
 
+  const label = translate(locale, 'maps.viewRoute');
+
   return [
     {
-      label: 'Tingnan ang ruta',
-      value: 'Tingnan ang ruta',
+      label,
+      value: label,
       action: 'open_maps' as const,
     },
     ...suggestions,
   ].slice(0, 5);
 }
 
-function buildOfficeFoundMessage(agency: GovernmentAgency, destination: MapDestination) {
+function buildOfficeFoundMessage(
+  agency: GovernmentAgency,
+  destination: MapDestination,
+  locale: AppLocale = getCachedLocale(),
+) {
   const officeName = destination.name || agency.name;
-  const addressSuffix = destination.address ? ` sa ${destination.address}` : '';
-  return `Narito ang pinakamalapit na opisina ng ${agency.name}: ${officeName}${addressSuffix}. Tingnan ang ruta sa mapa sa ibaba.`;
+  const addressSuffix = destination.address
+    ? translate(locale, 'maps.officeFoundAddressSuffix', { address: destination.address })
+    : '';
+
+  return translate(locale, 'maps.officeFound', {
+    agency: agency.name,
+    officeName,
+    addressSuffix,
+  });
 }
 
 export async function enrichReplyWithNearestOffice(

@@ -1,5 +1,9 @@
 import * as Location from 'expo-location';
 
+import { getCachedLocale } from '@/contexts/locale-context';
+import { translate } from '@/i18n';
+import type { AppLocale } from '@/i18n/types';
+
 export type UserLocation = {
   latitude: number;
   longitude: number;
@@ -7,8 +11,8 @@ export type UserLocation = {
 };
 
 export class LocationPermissionError extends Error {
-  constructor(message = 'Location permission was denied.') {
-    super(message);
+  constructor(message?: string, locale: AppLocale = getCachedLocale()) {
+    super(message ?? translate(locale, 'maps.locationPermission'));
     this.name = 'LocationPermissionError';
   }
 }
@@ -17,12 +21,12 @@ function formatAddress(parts: (string | null | undefined)[]) {
   return parts.filter(Boolean).join(', ');
 }
 
-export async function getUserLocationForAidey(): Promise<UserLocation> {
+export async function getUserLocationForAidey(
+  locale: AppLocale = getCachedLocale(),
+): Promise<UserLocation> {
   const { status } = await Location.requestForegroundPermissionsAsync();
   if (status !== 'granted') {
-    throw new LocationPermissionError(
-      'Kailangan namin ng iyong lokasyon para mahanap ang pinakamalapit na opisina.',
-    );
+    throw new LocationPermissionError(undefined, locale);
   }
 
   const position = await Location.getCurrentPositionAsync({
@@ -51,6 +55,13 @@ export async function getUserLocationForAidey(): Promise<UserLocation> {
   return { latitude, longitude, label };
 }
 
-export function buildLocationMessage(location: UserLocation): string {
-  return `Nasa ${location.label} ako (${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}). Hanapin ang pinakamalapit na opisina.`;
+export function buildLocationMessage(
+  location: UserLocation,
+  locale: AppLocale = getCachedLocale(),
+): string {
+  return translate(locale, 'maps.locationMessage', {
+    label: location.label,
+    latitude: location.latitude.toFixed(5),
+    longitude: location.longitude.toFixed(5),
+  });
 }

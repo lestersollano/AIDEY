@@ -4,11 +4,10 @@ import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'rea
 
 import { useSpeechToText } from '@/hooks/use-speech-to-text';
 import { Text } from '@/components/text';
+import { useTranslation } from '@/contexts/locale-context';
 
 type SpeechToTextButtonProps = {
-  /** Called with the recognized transcript once speech ends. */
   onTranscript: (transcript: string) => void;
-  /** Called with a user-facing error message. */
   onError?: (message: string) => void;
   size?: number;
   iconColor: string;
@@ -30,6 +29,7 @@ export function SpeechToTextButton({
   pressedStyle,
   disabled,
 }: SpeechToTextButtonProps) {
+  const { t } = useTranslation();
   const { isListening, languageLabel, toggleLanguage, toggleListening } = useSpeechToText({
     onResult: onTranscript,
     onError,
@@ -57,9 +57,11 @@ export function SpeechToTextButton({
     <Pressable
       style={({ pressed }) => [style, pressed && pressedStyle]}
       accessibilityLabel={
-        isListening ? 'Ihinto ang pakikinig' : `Speech to text (${languageLabel})`
+        isListening
+          ? t('speech.stopListening')
+          : t('speech.startListening', { language: languageLabel })
       }
-      accessibilityHint="I-tap-and-hold para lumipat ng wika sa pagitan ng Filipino at English"
+      accessibilityHint={t('speech.toggleHint')}
       disabled={disabled}
       onPressIn={handlePressIn}
       onPress={handlePress}

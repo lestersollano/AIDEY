@@ -4,6 +4,7 @@ import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 
 import { Text } from '@/components/text';
+import { useTranslation } from '@/contexts/locale-context';
 import { brand, colors } from '@/constants/colors';
 import { getGoogleMapsApiKey } from '@/constants/maps';
 import { fonts } from '@/constants/fonts';
@@ -54,6 +55,7 @@ export function DirectionsMap({
   interactive = false,
   showRoute = true,
 }: DirectionsMapProps) {
+  const { locale, t } = useTranslation();
   const mapRef = useRef<MapView>(null);
   const liveUserLocation = useLiveUserLocation(interactive);
   const activeUserLocation = liveUserLocation ?? userLocation;
@@ -127,7 +129,7 @@ export function DirectionsMap({
       setRouteError(null);
 
       try {
-        const route = await fetchDrivingRoute(activeUserLocation, resolvedDestination);
+        const route = await fetchDrivingRoute(activeUserLocation, resolvedDestination, locale);
         if (cancelled) return;
 
         lastRouteOriginRef.current = originKey;
@@ -139,7 +141,7 @@ export function DirectionsMap({
       } catch (error) {
         if (cancelled) return;
         setRouteCoordinates([]);
-        setRouteError(getDirectionsErrorMessage(error));
+        setRouteError(getDirectionsErrorMessage(error, locale));
       } finally {
         if (!cancelled) {
           setIsLoadingRoute(false);
@@ -159,6 +161,7 @@ export function DirectionsMap({
     resolvedDestination?.latitude,
     resolvedDestination?.longitude,
     showRoute,
+    locale,
   ]);
 
   const region = useMemo(
@@ -200,7 +203,7 @@ export function DirectionsMap({
           />
         ) : null}
         {!interactive && activeUserLocation ? (
-          <Marker coordinate={activeUserLocation} pinColor={brand.blue} title="Ikaw" />
+          <Marker coordinate={activeUserLocation} pinColor={brand.blue} title={t('maps.you')} />
         ) : null}
         {routeCoordinates.length > 0 ? (
           <Polyline
@@ -219,15 +222,13 @@ export function DirectionsMap({
 
       {!isResolving && !resolvedDestination ? (
         <View style={styles.overlay}>
-          <Text style={styles.overlayText}>Hindi mahanap ang lokasyon sa mapa.</Text>
+          <Text style={styles.overlayText}>{t('maps.locationNotFound')}</Text>
         </View>
       ) : null}
 
       {!apiKey && showRoute && activeUserLocation && resolvedDestination ? (
         <View style={styles.banner}>
-          <Text style={styles.bannerText}>
-            Idagdag ang EXPO_PUBLIC_GOOGLE_MAPS_API_KEY para sa ruta.
-          </Text>
+          <Text style={styles.bannerText}>{t('maps.apiKeyHint')}</Text>
         </View>
       ) : null}
 

@@ -9,6 +9,7 @@ import { AccordionSection } from '@/components/accordion-section';
 import { DocumentUploadPanel } from '@/components/document-upload-panel';
 import { ScreenHeader } from '@/components/screen-header';
 import { Text } from '@/components/text';
+import { useTranslation } from '@/contexts/locale-context';
 import { brand, colors } from '@/constants/colors';
 import {
   getDocumentGuide,
@@ -31,7 +32,8 @@ type DocumentStepsScreenProps = {
 const SECTION_ORDER: DocumentGuideSection[] = ['requirements', 'steps', 'upload'];
 
 export function DocumentStepsScreen({ documentId, title }: DocumentStepsScreenProps) {
-  const guide = getDocumentGuide(documentId);
+  const { locale, t } = useTranslation();
+  const guide = getDocumentGuide(documentId, locale);
   const { progress, isLoaded, toggleRequirement, toggleStep, completeSection } =
     useDocumentGuideProgress(documentId);
   const uploadsByDocument = useDocumentUploads();
@@ -115,7 +117,10 @@ export function DocumentStepsScreen({ documentId, title }: DocumentStepsScreenPr
 
   const handleFinishRequirements = useCallback(() => {
     if (!guide || requirementsSatisfiedCount < guide.requirements.length) {
-      Alert.alert('Kulang pa', 'Tsekan muna ang lahat ng kinakailangan bago magpatuloy.');
+      Alert.alert(
+        t('documents.steps.incompleteTitle'),
+        t('documents.steps.incompleteRequirements'),
+      );
       return;
     }
 
@@ -124,7 +129,10 @@ export function DocumentStepsScreen({ documentId, title }: DocumentStepsScreenPr
 
   const handleFinishSteps = useCallback(() => {
     if (!guide || stepsCheckedCount < guide.steps.length) {
-      Alert.alert('Kulang pa', 'Tsekan muna ang lahat ng hakbang na natapos mo bago magpatuloy.');
+      Alert.alert(
+        t('documents.steps.incompleteTitle'),
+        t('documents.steps.incompleteSteps'),
+      );
       return;
     }
 
@@ -134,8 +142,8 @@ export function DocumentStepsScreen({ documentId, title }: DocumentStepsScreenPr
   const handleFinishUpload = useCallback(() => {
     if (uploadedImages.length === 0) {
       Alert.alert(
-        'Wala pang larawan',
-        'Mag-upload muna ng kuha o larawan ng iyong dokumento bago tapusin.',
+        t('documents.steps.noPhotoTitle'),
+        t('documents.steps.noPhotoMessage'),
       );
       return;
     }
@@ -148,9 +156,7 @@ export function DocumentStepsScreen({ documentId, title }: DocumentStepsScreenPr
       <SafeAreaView style={styles.container}>
         <ScreenHeader title={<Text style={styles.headerTitle}>{title}</Text>} />
         <View style={styles.emptyState}>
-          <Text style={styles.emptyStateText}>
-            Wala pang detalyadong gabay para dito. Subukan ang Aidey AI Assistant para sa tulong.
-          </Text>
+          <Text style={styles.emptyStateText}>{t('documents.steps.empty')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -171,29 +177,28 @@ export function DocumentStepsScreen({ documentId, title }: DocumentStepsScreenPr
               style={styles.completeMascot}
               contentFit="contain"
             />
-            <Text style={styles.completeTitle}>Handa ka na!</Text>
+            <Text style={styles.completeTitle}>{t('documents.steps.completeTitle')}</Text>
             <Text style={styles.completeMessage}>
-              Nakumpleto mo na ang hakbang-hakbang para sa {title}. Puwede mo na itong dalhin sa
-              opisina.
+              {t('documents.steps.completeMessage', { title })}
             </Text>
             <Pressable
               style={({ pressed }) => [styles.completeButton, pressed && styles.completeButtonPressed]}
               accessibilityRole="button"
               onPress={() => router.back()}>
-              <Text style={styles.completeButtonText}>Bumalik</Text>
+              <Text style={styles.completeButtonText}>{t('common.back')}</Text>
             </Pressable>
           </View>
         ) : (
-          <Text style={styles.intro}>
-            Sundan ang tatlong hakbang na ito nang paisa-isa. Kumpletuhin ang isang seksyon para
-            mabuksan ang susunod.
-          </Text>
+          <Text style={styles.intro}>{t('documents.steps.intro')}</Text>
         )}
 
         <AccordionSection
           index={1}
-          title="Mga Kinakailangan"
-          subtitle={`${requirementsSatisfiedCount}/${guide.requirements.length} natsek`}
+          title={t('documents.steps.requirements')}
+          subtitle={t('documents.steps.checked', {
+            count: requirementsSatisfiedCount,
+            total: guide.requirements.length,
+          })}
           completed={isRequirementsDone}
           expanded={expandedSection === 'requirements'}
           onToggle={() => handleToggleSection('requirements')}>
@@ -229,7 +234,7 @@ export function DocumentStepsScreen({ documentId, title }: DocumentStepsScreenPr
                         {label}
                       </Text>
                       {isAuto ? (
-                        <Text style={styles.autoBadge}>Mayroon ka na nito sa Aidey</Text>
+                        <Text style={styles.autoBadge}>{t('documents.steps.autoBadge')}</Text>
                       ) : null}
                     </View>
                   </Pressable>
@@ -244,7 +249,9 @@ export function DocumentStepsScreen({ documentId, title }: DocumentStepsScreenPr
                         size={14}
                         tintColor={brand.teal}
                       />
-                      <Text style={styles.dependencyLinkText}>Kunin muna: {missingDocument.label}</Text>
+                      <Text style={styles.dependencyLinkText}>
+                        {t('documents.steps.getFirst', { label: missingDocument.label })}
+                      </Text>
                     </Pressable>
                   ) : null}
                 </View>
@@ -256,7 +263,7 @@ export function DocumentStepsScreen({ documentId, title }: DocumentStepsScreenPr
             style={({ pressed }) => [styles.doneButton, pressed && styles.doneButtonPressed]}
             accessibilityRole="button"
             onPress={handleFinishRequirements}>
-            <Text style={styles.doneButtonText}>Tapos na, may dala na ako</Text>
+            <Text style={styles.doneButtonText}>{t('documents.steps.finishRequirements')}</Text>
             <SymbolView
               name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }}
               size={16}
@@ -267,11 +274,14 @@ export function DocumentStepsScreen({ documentId, title }: DocumentStepsScreenPr
 
         <AccordionSection
           index={2}
-          title="Mga Hakbang"
+          title={t('documents.steps.steps')}
           subtitle={
             isStepsDone
-              ? `${stepsCheckedCount}/${guide.steps.length} tapos`
-              : `Tinatayang tagal: ${guide.timeline}`
+              ? t('documents.steps.stepsDone', {
+                  count: stepsCheckedCount,
+                  total: guide.steps.length,
+                })
+              : t('documents.steps.estimatedTime', { timeline: guide.timeline })
           }
           locked={!isRequirementsDone}
           completed={isStepsDone}
@@ -311,7 +321,7 @@ export function DocumentStepsScreen({ documentId, title }: DocumentStepsScreenPr
             style={({ pressed }) => [styles.doneButton, pressed && styles.doneButtonPressed]}
             accessibilityRole="button"
             onPress={handleFinishSteps}>
-            <Text style={styles.doneButtonText}>Tapos na ang lahat ng hakbang</Text>
+            <Text style={styles.doneButtonText}>{t('documents.steps.finishSteps')}</Text>
             <SymbolView
               name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }}
               size={16}
@@ -322,11 +332,11 @@ export function DocumentStepsScreen({ documentId, title }: DocumentStepsScreenPr
 
         <AccordionSection
           index={3}
-          title="I-upload"
+          title={t('documents.steps.upload')}
           subtitle={
             uploadedImages.length > 0
-              ? `${uploadedImages.length} larawan na-upload`
-              : 'I-upload ang larawan ng dokumento'
+              ? t('documents.steps.uploadCount', { count: uploadedImages.length })
+              : t('documents.steps.uploadHint')
           }
           locked={!isStepsDone}
           completed={isUploadDone}
@@ -338,7 +348,7 @@ export function DocumentStepsScreen({ documentId, title }: DocumentStepsScreenPr
             style={({ pressed }) => [styles.doneButton, pressed && styles.doneButtonPressed]}
             accessibilityRole="button"
             onPress={handleFinishUpload}>
-            <Text style={styles.doneButtonText}>Tapos</Text>
+            <Text style={styles.doneButtonText}>{t('common.done')}</Text>
             <SymbolView
               name={{ ios: 'checkmark', android: 'check', web: 'check' }}
               size={16}
