@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text } from '@/components/text';
 import { brand, colors } from '@/constants/colors';
 import { fonts } from '@/constants/fonts';
-import type { ChatSessionSummary } from '@/services/chat-sessions';
+import { isChecklistComplete, type ChatSessionSummary } from '@/services/chat-sessions';
 
 const SIDEBAR_WIDTH = Math.min(320, Dimensions.get('window').width * 0.82);
 
@@ -35,7 +35,7 @@ export function ChatHistorySidebar({
   onNewChat,
   onSelectSession,
 }: ChatHistorySidebarProps) {
-  const translateX = useRef(new Animated.Value(-SIDEBAR_WIDTH)).current;
+  const translateX = useRef(new Animated.Value(SIDEBAR_WIDTH)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -55,7 +55,7 @@ export function ChatHistorySidebar({
     } else {
       Animated.parallel([
         Animated.timing(translateX, {
-          toValue: -SIDEBAR_WIDTH,
+          toValue: SIDEBAR_WIDTH,
           duration: 200,
           useNativeDriver: true,
         }),
@@ -77,14 +77,14 @@ export function ChatHistorySidebar({
 
         <Animated.View
           style={[styles.panel, { width: SIDEBAR_WIDTH, transform: [{ translateX }] }]}>
-          <SafeAreaView style={styles.panelContent} edges={['top', 'bottom', 'left']}>
+          <SafeAreaView style={styles.panelContent} edges={['top', 'bottom', 'right']}>
             <Pressable
               style={({ pressed }) => [styles.backRow, pressed && styles.backRowPressed]}
               accessibilityRole="button"
               accessibilityLabel="Back"
               onPress={onClose}>
               <SymbolView
-                name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }}
+                name={{ ios: 'chevron.right', android: 'arrow_forward', web: 'arrow_forward' }}
                 size={20}
                 tintColor={colors.secondary}
               />
@@ -115,6 +115,7 @@ export function ChatHistorySidebar({
               }
               renderItem={({ item }) => {
                 const isActive = item.id === activeSessionId;
+                const isDone = isChecklistComplete(item.checklist);
                 return (
                   <Pressable
                     style={({ pressed }) => [
@@ -139,6 +140,17 @@ export function ChatHistorySidebar({
                       numberOfLines={1}>
                       {item.title}
                     </Text>
+                    {isDone ? (
+                      <SymbolView
+                        name={{
+                          ios: 'checkmark.circle.fill',
+                          android: 'check_circle',
+                          web: 'check_circle',
+                        }}
+                        size={15}
+                        tintColor={brand.teal}
+                      />
+                    ) : null}
                   </Pressable>
                 );
               }}
@@ -154,6 +166,7 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     flexDirection: 'row',
+    justifyContent: 'flex-end',
   },
   backdrop: {
     position: 'absolute',
@@ -167,7 +180,7 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: colors.primary,
     shadowColor: brand.navy,
-    shadowOffset: { width: 2, height: 0 },
+    shadowOffset: { width: -2, height: 0 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 8,

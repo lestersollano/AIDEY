@@ -1,4 +1,5 @@
 import { SymbolView } from 'expo-symbols';
+import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/text';
@@ -12,49 +13,85 @@ type TaskChecklistCardProps = {
 };
 
 export function TaskChecklistCard({ items, onToggleItem }: TaskChecklistCardProps) {
+  const [expanded, setExpanded] = useState(false);
+
   if (items.length === 0) return null;
 
   const doneCount = items.filter((item) => item.done).length;
   const progress = items.length > 0 ? doneCount / items.length : 0;
+  const currentItem = items.find((item) => !item.done) ?? items[items.length - 1];
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerRow}>
+      <Pressable
+        style={({ pressed }) => [styles.headerRow, pressed && styles.headerRowPressed]}
+        accessibilityRole="button"
+        accessibilityLabel={expanded ? 'I-minimize ang checklist' : 'Palawakin ang checklist'}
+        accessibilityState={{ expanded }}
+        onPress={() => setExpanded((current) => !current)}>
         <Text style={styles.title}>Progreso ng Gawain</Text>
-        <Text style={styles.progressLabel}>
-          {doneCount}/{items.length} tapos
-        </Text>
-      </View>
+        <View style={styles.headerRight}>
+          <Text style={styles.progressLabel}>
+            {doneCount}/{items.length} tapos
+          </Text>
+          <SymbolView
+            name={{
+              ios: expanded ? 'chevron.up' : 'chevron.down',
+              android: expanded ? 'expand_less' : 'expand_more',
+              web: expanded ? 'expand_less' : 'expand_more',
+            }}
+            size={16}
+            tintColor={colors.secondary}
+          />
+        </View>
+      </Pressable>
 
       <View style={styles.progressTrack}>
         <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` }]} />
       </View>
 
-      <View style={styles.itemsList}>
-        {items.map((item) => (
-          <Pressable
-            key={item.id}
-            style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: item.done }}
-            accessibilityLabel={item.label}
-            disabled={!onToggleItem}
-            onPress={() => onToggleItem?.(item.id, !item.done)}>
-            <SymbolView
-              name={{
-                ios: item.done ? 'checkmark.circle.fill' : 'circle',
-                android: item.done ? 'check_circle' : 'radio_button_unchecked',
-                web: item.done ? 'check_circle' : 'radio_button_unchecked',
-              }}
-              size={20}
-              tintColor={item.done ? brand.teal : colors.secondaryPlaceholder}
-            />
-            <Text style={[styles.itemLabel, item.done && styles.itemLabelDone]}>
-              {item.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      {expanded ? (
+        <View style={styles.itemsList}>
+          {items.map((item) => (
+            <Pressable
+              key={item.id}
+              style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: item.done }}
+              accessibilityLabel={item.label}
+              disabled={!onToggleItem}
+              onPress={() => onToggleItem?.(item.id, !item.done)}>
+              <SymbolView
+                name={{
+                  ios: item.done ? 'checkmark.circle.fill' : 'circle',
+                  android: item.done ? 'check_circle' : 'radio_button_unchecked',
+                  web: item.done ? 'check_circle' : 'radio_button_unchecked',
+                }}
+                size={20}
+                tintColor={item.done ? brand.teal : colors.secondaryPlaceholder}
+              />
+              <Text style={[styles.itemLabel, item.done && styles.itemLabelDone]}>
+                {item.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : currentItem ? (
+        <View style={styles.currentItemRow}>
+          <SymbolView
+            name={{
+              ios: currentItem.done ? 'checkmark.circle.fill' : 'circle',
+              android: currentItem.done ? 'check_circle' : 'radio_button_unchecked',
+              web: currentItem.done ? 'check_circle' : 'radio_button_unchecked',
+            }}
+            size={18}
+            tintColor={currentItem.done ? brand.teal : colors.secondaryPlaceholder}
+          />
+          <Text style={styles.currentItemLabel} numberOfLines={1}>
+            {currentItem.label}
+          </Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -81,6 +118,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  headerRowPressed: {
+    opacity: 0.7,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   title: {
     fontSize: 13,
@@ -124,5 +169,16 @@ const styles = StyleSheet.create({
   itemLabelDone: {
     color: colors.secondary,
     textDecorationLine: 'line-through',
+  },
+  currentItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  currentItemLabel: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: fonts.regular,
+    color: brand.navy,
   },
 });

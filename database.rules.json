@@ -29,19 +29,53 @@
       }
     },
 
-    "taskChecklists": {
+    "chatSessions": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid",
 
-        "$taskKey": {
-          ".validate": "newData.hasChildren(['items', 'updatedAt'])",
+        "$sessionId": {
+          ".validate": "newData.hasChildren(['title', 'messages', 'checklist', 'updatedAt'])",
+
+          "title": {
+            ".validate": "newData.isString()"
+          },
+
+          "documentId": {
+            ".validate": "newData.isString() || newData.val() == null"
+          },
 
           "documentLabel": {
             ".validate": "newData.isString() || newData.val() == null"
           },
 
-          "items": {
+          "messages": {
+            "$index": {
+              ".validate": "newData.hasChildren(['id', 'role', 'text'])",
+
+              "id": {
+                ".validate": "newData.isString() && newData.val().length > 0"
+              },
+
+              "role": {
+                ".validate": "newData.val() === 'user' || newData.val() === 'assistant'"
+              },
+
+              "text": {
+                ".validate": "newData.isString()"
+              },
+
+              "model": {
+                ".validate": "newData.isString() || newData.val() == null"
+              },
+
+              "isArrivalCheck": {
+                ".validate": "newData.isBoolean() || newData.val() == null"
+              }
+            }
+          },
+
+          "checklist": {
             "$index": {
               ".validate": "newData.hasChildren(['id', 'label', 'done'])",
 
@@ -63,12 +97,12 @@
             }
           },
 
-          "updatedAt": {
-            ".validate": "newData.isNumber() && newData.val() <= now"
+          "createdAt": {
+            ".validate": "newData.isNumber()"
           },
 
-          "$other": {
-            ".validate": false
+          "updatedAt": {
+            ".validate": "newData.isNumber() && newData.val() <= now"
           }
         }
       }

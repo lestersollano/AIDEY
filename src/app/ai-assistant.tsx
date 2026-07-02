@@ -30,13 +30,13 @@ import {
 } from '@/services/chat';
 import {
   createChatSession,
+  getMostRecentOpenSession,
   getChatSession,
-  saveChatSessionMessages,
+  saveChatSession,
   type ChatMessageRecord,
 } from '@/services/chat-sessions';
 import { useChatSessions } from '@/hooks/use-chat-sessions';
 import { useDocumentUploads } from '@/hooks/use-document-uploads';
-import { useTaskChecklist } from '@/hooks/use-task-checklist';
 import { useLiveUserLocation } from '@/hooks/use-live-user-location';
 import {
   buildLocationMessage,
@@ -52,6 +52,7 @@ import {
   createFallbackReply,
   WELCOME_SUGGESTIONS,
   type AideyReply,
+  type ChecklistItem,
   type MapDestination,
   type Suggestion,
 } from '@/types/aidey-response';
@@ -141,15 +142,14 @@ export default function AiAssistantScreen() {
     initialDocumentId,
   );
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
   const [sidebarVisible, setSidebarVisible] = useState(false);
+  const [sessionResumed, setSessionResumed] = useState(false);
   const sessionCreationRef = useRef<Promise<string> | null>(null);
   const chatSessions = useChatSessions();
-  const taskKey = activeDocumentId ?? 'general';
 
   const documentUploads = useDocumentUploads();
   const ownedDocumentIds = Object.keys(documentUploads);
-  const { items: checklistItems, applyChecklist, toggleItem: toggleChecklistItem } =
-    useTaskChecklist(taskKey);
   const canSend = message.trim().length > 0 && !isLoading;
   const mapIsRelevant = isMapRelevantInConversation(messages);
   const activeMapDestination = getActiveMapDestination(messages);
@@ -157,11 +157,38 @@ export default function AiAssistantScreen() {
   const trackedUserLocation = liveUserLocation ?? userLocation ?? undefined;
   const proximityTriggeredRef = useRef<string | null>(null);
 
+  // Resume the most recently active, not-yet-completed conversation so the
+  // chat feels persistent across app opens — unless the checklist tied to it
+  // is already fully done, in which case we start with a blank chat.
   useEffect(() => {
-    if (messages.length === 0) return;
+    let cancelled = false;
+
+    void getMostRecentOpenSession().then((session) => {
+      if (cancelled) return;
+
+      if (session) {
+        sessionCreationRef.current = Promise.resolve(session.id);
+        setCurrentSessionId(session.id);
+        setMessages(session.messages);
+        setChecklistItems(session.checklist);
+        setActiveDocumentId((current) => current ?? session.documentId);
+        setActiveDocumentLabel((current) => current ?? session.documentLabel);
+      }
+
+      setSessionResumed(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (messages.length === 0 && checklistItems.length === 0) return;
 
     if (currentSessionId) {
-      void saveChatSessionMessages(currentSessionId, messages);
+      void saveChatSession(currentSessionId, { messages, checklist: checklistItems });
       return;
     }
 
@@ -175,8 +202,24 @@ export default function AiAssistantScreen() {
       });
     }
 
-    void sessionCreationRef.current.then((id) => saveChatSessionMessages(id, messages));
-  }, [messages, currentSessionId, activeDocumentId, activeDocumentLabel]);
+    void sessionCreationRef.current.then((id) =>
+      saveChatSession(id, { messages, checklist: checklistItems }),
+    );
+  }, [messages, checklistItems, currentSessionId, activeDocumentId, activeDocumentLabel]);
+
+  // Once every checklist item is done, the conversation is complete — clear
+  // the chat shortly after so the next visit (or this one) starts fresh.
+  useEffect(() => {
+    if (checklistItems.length === 0) return;
+    if (!checklistItems.every((item) => item.done)) return;
+
+    const timeout = setTimeout(() => {
+      handleNewChat();
+    }, 2200);
+
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checklistItems]);
 
   const destinationKey = activeMapDestination
     ? getMapDestinationKey(activeMapDestination)
@@ -267,7 +310,7 @@ export default function AiAssistantScreen() {
       });
 
       if (reply.checklist?.length) {
-        void applyChecklist(reply.checklist, activeDocumentLabel);
+        setChecklistItems(reply.checklist);
       }
 
       setUserLocation((current) =>
@@ -342,7 +385,7 @@ export default function AiAssistantScreen() {
       });
 
       if (reply.checklist?.length) {
-        void applyChecklist(reply.checklist, activeDocumentLabel);
+        setChecklistItems(reply.checklist);
       }
 
       const officeContext = {
@@ -441,6 +484,7 @@ export default function AiAssistantScreen() {
     sessionCreationRef.current = null;
     setCurrentSessionId(null);
     setMessages([]);
+    setChecklistItems([]);
     setFinishedTaskIds(new Set());
     setActiveDocumentId(undefined);
     setActiveDocumentLabel(undefined);
@@ -454,10 +498,17 @@ export default function AiAssistantScreen() {
     sessionCreationRef.current = Promise.resolve(session.id);
     setCurrentSessionId(session.id);
     setMessages(session.messages);
+    setChecklistItems(session.checklist);
     setActiveDocumentId(session.documentId);
     setActiveDocumentLabel(session.documentLabel);
     setFinishedTaskIds(new Set());
     setSidebarVisible(false);
+  }
+
+  function handleToggleChecklistItem(itemId: string, done: boolean) {
+    setChecklistItems((current) =>
+      current.map((item) => (item.id === itemId ? { ...item, done } : item)),
+    );
   }
 
   async function handleSuggestionSelect(suggestion: Suggestion) {
@@ -485,11 +536,11 @@ export default function AiAssistantScreen() {
   }
 
   useEffect(() => {
-    if (!connectionChecked || !initialPrompt || autoSentRef.current) return;
+    if (!connectionChecked || !sessionResumed || !initialPrompt || autoSentRef.current) return;
 
     autoSentRef.current = true;
     void submitMessage(initialPrompt);
-  }, [connectionChecked, initialPrompt]);
+  }, [connectionChecked, sessionResumed, initialPrompt]);
 
   async function handleSend() {
     await submitMessage(message);
@@ -547,7 +598,7 @@ export default function AiAssistantScreen() {
             <View style={styles.checklistWrapper}>
               <TaskChecklistCard
                 items={checklistItems}
-                onToggleItem={(itemId, done) => void toggleChecklistItem(itemId, done)}
+                onToggleItem={handleToggleChecklistItem}
               />
             </View>
           ) : null}
