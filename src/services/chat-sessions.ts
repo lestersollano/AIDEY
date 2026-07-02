@@ -26,13 +26,15 @@ export type ChatSession = {
   messages: ChatMessageRecord[];
   /** The task checklist for this conversation. A conversation is "closed" once every item is done. */
   checklist: ChecklistItem[];
+  /** Archived conversations are hidden from the main list and never auto-resumed. */
+  archived: boolean;
   createdAt: number;
   updatedAt: number;
 };
 
 export type ChatSessionSummary = Pick<
   ChatSession,
-  'id' | 'title' | 'updatedAt' | 'checklist'
+  'id' | 'title' | 'updatedAt' | 'checklist' | 'archived'
 >;
 
 type SessionMap = Record<string, ChatSession>;
@@ -58,6 +60,7 @@ function normalizeSession(id: string, value: Partial<Omit<ChatSession, 'id'>>): 
     documentLabel: value.documentLabel ?? undefined,
     messages: Array.isArray(value.messages) ? value.messages : [],
     checklist: Array.isArray(value.checklist) ? value.checklist : [],
+    archived: value.archived ?? false,
     createdAt: value.createdAt ?? Date.now(),
     updatedAt: value.updatedAt ?? Date.now(),
   };
@@ -135,7 +138,13 @@ export function subscribeToChatSessions(listener: () => void) {
 export async function listChatSessions(): Promise<ChatSessionSummary[]> {
   const map = await readMap();
   return Object.values(map)
-    .map(({ id, title, updatedAt, checklist }) => ({ id, title, updatedAt, checklist }))
+    .map(({ id, title, updatedAt, checklist, archived }) => ({
+      id,
+      title,
+      updatedAt,
+      checklist,
+      archived,
+    }))
     .sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
@@ -144,11 +153,12 @@ export async function getChatSession(id: string): Promise<ChatSession | null> {
   return map[id] ?? null;
 }
 
-/** The conversation that should be resumed on open — the most recently active one whose checklist isn't fully done yet. */
+/** The conversation that should be resumed on open — the most recently active,
+ * non-archived one whose checklist isn't fully done yet. */
 export async function getMostRecentOpenSession(): Promise<ChatSession | null> {
   const map = await readMap();
   const sessions = Object.values(map).sort((a, b) => b.updatedAt - a.updatedAt);
-  return sessions.find((session) => isSessionOpen(session)) ?? null;
+  return sessions.find((session) => !session.archived && isSessionOpen(session)) ?? null;
 }
 
 function generateSessionId(): string {
@@ -164,6 +174,27 @@ function deriveTitle(messages: ChatMessageRecord[]): string {
   return `${trimmed.slice(0, MAX_TITLE_LENGTH).trimEnd()}…`;
 }
 
+/** Firebase's `set()` rejects any `undefined` value anywhere in the object
+ * tree (unlike JSON.stringify, which silently drops it). Optional fields on
+ * chat messages and AI replies (structured, model, checklist, mapDestination,
+ * etc.) are frequently undefined, so strip them recursively before writing. */
+function stripUndefined<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripUndefined(item)) as unknown as T;
+  }
+
+  if (value && typeof value === 'object') {
+    const result: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
+      if (val === undefined) continue;
+      result[key] = stripUndefined(val);
+    }
+    return result as T;
+  }
+
+  return value;
+}
+
 async function syncSessionToCloud(session: ChatSession): Promise<void> {
   const uid = auth?.currentUser?.uid;
   if (!database || !uid) return;
@@ -172,15 +203,19 @@ async function syncSessionToCloud(session: ChatSession): Promise<void> {
   if (!isOnline) return;
 
   try {
-    await databaseSet(databaseRef(database, `chatSessions/${uid}/${session.id}`), {
-      title: session.title,
-      documentId: session.documentId ?? null,
-      documentLabel: session.documentLabel ?? null,
-      messages: session.messages,
-      checklist: session.checklist,
-      createdAt: session.createdAt,
-      updatedAt: session.updatedAt,
-    });
+    await databaseSet(
+      databaseRef(database, `chatSessions/${uid}/${session.id}`),
+      stripUndefined({
+        title: session.title,
+        documentId: session.documentId ?? null,
+        documentLabel: session.documentLabel ?? null,
+        messages: session.messages,
+        checklist: session.checklist,
+        archived: session.archived,
+        createdAt: session.createdAt,
+        updatedAt: session.updatedAt,
+      }),
+    );
   } catch (error) {
     console.warn(`Failed to sync chat session ${session.id} to cloud`, error);
   }
@@ -198,6 +233,7 @@ export async function createChatSession(options?: {
     documentLabel: options?.documentLabel,
     messages: [],
     checklist: [],
+    archived: false,
     createdAt: now,
     updatedAt: now,
   };
@@ -229,6 +265,23 @@ export async function saveChatSession(
     updatedAt: Date.now(),
   };
 
+  map[id] = updated;
+  await writeMap(map);
+
+  void syncSessionToCloud(updated);
+
+  return updated;
+}
+
+export async function setChatSessionArchived(
+  id: string,
+  archived: boolean,
+): Promise<ChatSession | null> {
+  const map = await readMap();
+  const existing = map[id];
+  if (!existing) return null;
+
+  const updated: ChatSession = { ...existing, archived };
   map[id] = updated;
   await writeMap(map);
 

@@ -11,5 +11,5 @@ export default function DocumentStepsRoute() {
     return <Redirect href="/documents" />;
   }
 
-  return <DocumentStepsScreen title={document.label} />;
+  return <DocumentStepsScreen documentId={document.id} title={document.label} />;
 }

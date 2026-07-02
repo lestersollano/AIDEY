@@ -1,5 +1,5 @@
 import { SymbolView } from 'expo-symbols';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
@@ -18,6 +18,10 @@ import { isChecklistComplete, type ChatSessionSummary } from '@/services/chat-se
 
 const SIDEBAR_WIDTH = Math.min(320, Dimensions.get('window').width * 0.82);
 
+type ListRow =
+  | { type: 'session'; session: ChatSessionSummary }
+  | { type: 'archivedHeader'; count: number };
+
 type ChatHistorySidebarProps = {
   visible: boolean;
   sessions: ChatSessionSummary[];
@@ -25,6 +29,7 @@ type ChatHistorySidebarProps = {
   onClose: () => void;
   onNewChat: () => void;
   onSelectSession: (sessionId: string) => void;
+  onArchiveSession: (sessionId: string, archived: boolean) => void;
 };
 
 export function ChatHistorySidebar({
@@ -34,9 +39,33 @@ export function ChatHistorySidebar({
   onClose,
   onNewChat,
   onSelectSession,
+  onArchiveSession,
 }: ChatHistorySidebarProps) {
   const translateX = useRef(new Animated.Value(SIDEBAR_WIDTH)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
+  const [archivedExpanded, setArchivedExpanded] = useState(false);
+
+  const activeSessions = useMemo(
+    () => sessions.filter((session) => !session.archived),
+    [sessions],
+  );
+  const archivedSessions = useMemo(
+    () => sessions.filter((session) => session.archived),
+    [sessions],
+  );
+
+  const rows: ListRow[] = useMemo(() => {
+    const result: ListRow[] = activeSessions.map((session) => ({ type: 'session', session }));
+    if (archivedSessions.length > 0) {
+      result.push({ type: 'archivedHeader', count: archivedSessions.length });
+      if (archivedExpanded) {
+        for (const session of archivedSessions) {
+          result.push({ type: 'session', session });
+        }
+      }
+    }
+    return result;
+  }, [activeSessions, archivedSessions, archivedExpanded]);
 
   useEffect(() => {
     if (visible) {
@@ -107,13 +136,50 @@ export function ChatHistorySidebar({
             <FlatList
               style={styles.list}
               contentContainerStyle={styles.listContent}
-              data={sessions}
-              keyExtractor={(item) => item.id}
+              data={rows}
+              keyExtractor={(row, index) =>
+                row.type === 'session' ? row.session.id : `archived-header-${index}`
+              }
               showsVerticalScrollIndicator={false}
               ListEmptyComponent={
                 <Text style={styles.emptyText}>Wala pang nakaraang chat.</Text>
               }
-              renderItem={({ item }) => {
+              renderItem={({ item: row }) => {
+                if (row.type === 'archivedHeader') {
+                  return (
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.archivedHeaderRow,
+                        pressed && styles.sessionRowPressed,
+                      ]}
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        archivedExpanded ? 'I-minimize ang archived' : 'Ipakita ang archived'
+                      }
+                      accessibilityState={{ expanded: archivedExpanded }}
+                      onPress={() => setArchivedExpanded((current) => !current)}>
+                      <SymbolView
+                        name={{ ios: 'archivebox', android: 'archive', web: 'archive' }}
+                        size={15}
+                        tintColor={colors.secondary}
+                      />
+                      <Text style={styles.archivedHeaderText}>
+                        Naka-archive ({row.count})
+                      </Text>
+                      <SymbolView
+                        name={{
+                          ios: archivedExpanded ? 'chevron.up' : 'chevron.down',
+                          android: archivedExpanded ? 'expand_less' : 'expand_more',
+                          web: archivedExpanded ? 'expand_less' : 'expand_more',
+                        }}
+                        size={14}
+                        tintColor={colors.secondary}
+                      />
+                    </Pressable>
+                  );
+                }
+
+                const item = row.session;
                 const isActive = item.id === activeSessionId;
                 const isDone = isChecklistComplete(item.checklist);
                 return (
@@ -136,7 +202,11 @@ export function ChatHistorySidebar({
                       tintColor={isActive ? brand.teal : colors.secondaryPlaceholder}
                     />
                     <Text
-                      style={[styles.sessionTitle, isActive && styles.sessionTitleActive]}
+                      style={[
+                        styles.sessionTitle,
+                        isActive && styles.sessionTitleActive,
+                        item.archived && styles.sessionTitleArchived,
+                      ]}
                       numberOfLines={1}>
                       {item.title}
                     </Text>
@@ -151,6 +221,30 @@ export function ChatHistorySidebar({
                         tintColor={brand.teal}
                       />
                     ) : null}
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.archiveButton,
+                        pressed && styles.archiveButtonPressed,
+                      ]}
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        item.archived ? 'I-unarchive ang chat' : 'I-archive ang chat'
+                      }
+                      hitSlop={8}
+                      onPress={(event) => {
+                        event.stopPropagation();
+                        onArchiveSession(item.id, !item.archived);
+                      }}>
+                      <SymbolView
+                        name={{
+                          ios: item.archived ? 'arrow.uturn.up' : 'archivebox',
+                          android: item.archived ? 'unarchive' : 'archive',
+                          web: item.archived ? 'unarchive' : 'archive',
+                        }}
+                        size={15}
+                        tintColor={colors.secondaryPlaceholder}
+                      />
+                    </Pressable>
                   </Pressable>
                 );
               }}
@@ -263,5 +357,31 @@ const styles = StyleSheet.create({
   sessionTitleActive: {
     fontFamily: fonts.semiBold,
     color: brand.teal,
+  },
+  sessionTitleArchived: {
+    color: colors.secondaryPlaceholder,
+  },
+  archiveButton: {
+    padding: 6,
+    borderRadius: 8,
+  },
+  archiveButtonPressed: {
+    backgroundColor: colors.secondaryMuted,
+  },
+  archivedHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    marginTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: colors.secondaryBorder,
+  },
+  archivedHeaderText: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: fonts.semiBold,
+    color: colors.secondary,
   },
 });

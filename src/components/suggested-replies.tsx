@@ -45,11 +45,15 @@ export function SuggestedReplies({
 
 const styles = StyleSheet.create({
   content: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
     alignItems: 'flex-start',
+    justifyContent: 'flex-start',
   },
   contentCentered: {
     alignItems: 'center',
+    justifyContent: 'center',
   },
   chip: {
     minHeight: 44,

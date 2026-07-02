@@ -1,6 +1,8 @@
 import { GoogleGenAI } from '@google/genai';
 
 import { DOCUMENTS } from '@/constants/documents';
+import { getDocumentGuide, getRequirementLabel } from '@/constants/document-guides';
+import type { DocumentGuideProgress } from '@/services/document-guide-progress';
 import {
   AIDEY_RESPONSE_JSON_SCHEMA,
   createFallbackReply,
@@ -19,6 +21,7 @@ export type ChatMessage = {
 export type ChatSessionContext = {
   documentLabel?: string;
   ownedDocumentIds?: string[];
+  documentGuideProgress?: Record<string, DocumentGuideProgress>;
   atOfficeProximity?: {
     officeName: string;
     officeAddress?: string;
@@ -44,6 +47,62 @@ const DOCUMENT_CATALOG_LIST = DOCUMENTS.map(
   (document) => `${document.id} = ${document.label}`,
 ).join('; ');
 
+/** Summarizes what the user has already accomplished on their own inside the
+ * app's step-by-step document guides (requirements/steps checklists, section
+ * completion) — independent of anything discussed in this chat — so Aidey
+ * doesn't re-ask or re-explain things already done. */
+function buildGuideProgressContext(progressByDocument?: Record<string, DocumentGuideProgress>): string {
+  if (!progressByDocument) return '';
+
+  const summaries = Object.entries(progressByDocument)
+    .map(([documentId, progress]) => {
+      const hasAnyProgress =
+        progress.checkedRequirements.length > 0 ||
+        progress.checkedSteps.length > 0 ||
+        progress.completedSections.length > 0;
+      if (!hasAnyProgress) return null;
+
+      const guide = getDocumentGuide(documentId);
+      const label = DOCUMENTS.find((document) => document.id === documentId)?.label;
+      if (!guide || !label) return null;
+
+      const parts: string[] = [];
+
+      if (progress.completedSections.includes('requirements')) {
+        parts.push('fully prepared all requirements');
+      } else if (progress.checkedRequirements.length > 0) {
+        const items = progress.checkedRequirements
+          .map((index) => guide.requirements[index] && getRequirementLabel(guide.requirements[index]))
+          .filter((item): item is string => Boolean(item));
+        if (items.length) parts.push(`already prepared: ${items.join('; ')}`);
+      }
+
+      if (progress.completedSections.includes('steps')) {
+        parts.push('already followed/completed all the process steps');
+      } else if (progress.checkedSteps.length > 0) {
+        const items = progress.checkedSteps
+          .map((index) => guide.steps[index]?.title)
+          .filter((item): item is string => Boolean(item));
+        if (items.length) parts.push(`already did: ${items.join('; ')}`);
+      }
+
+      if (progress.completedSections.includes('upload')) {
+        parts.push('already uploaded/saved a photo of the finished document');
+      }
+
+      if (!parts.length) return null;
+      return `${label} — ${parts.join('; ')}`;
+    })
+    .filter((item): item is string => Boolean(item));
+
+  if (!summaries.length) return '';
+
+  return (
+    "The user has already made real progress on their own by completing parts of the app's step-by-step document guide screens (checking off requirements/steps, finishing sections) — this did NOT happen through this chat, but it is genuinely done. " +
+    `Treat it as fact and do NOT ask the user to redo, re-confirm, or re-explain these, and do NOT re-list requirements/steps already marked done: ${summaries.join(' | ')}. `
+  );
+}
+
 function buildSystemPrompt(context?: ChatSessionContext): string {
   const documentContext = context?.documentLabel
     ? `The user is trying to obtain: ${context.documentLabel}. Keep guiding them toward that goal.`
@@ -56,6 +115,8 @@ function buildSystemPrompt(context?: ChatSessionContext): string {
   const ownedDocumentsContext = ownedDocumentLabels?.length
     ? `The user already has these saved in their document catalogue: ${ownedDocumentLabels.join(', ')}. Treat these as documents/IDs the user already possesses — do NOT ask if they already have them or tell them how to get them from scratch; only offer to help with renewal, replacement, or using them as a requirement for something else if relevant. `
     : 'The user has not saved any documents in their catalogue yet. ';
+
+  const guideProgressContext = buildGuideProgressContext(context?.documentGuideProgress);
 
   const checklistContext = context?.checklist?.length
     ? `The task checklist so far (id/label/done) is: ${JSON.stringify(context.checklist)}. Return this EXACT list of items (same ids, same labels, same order) in your checklist field every time, only flipping "done" to true when that milestone is actually completed. Never rename, remove, reorder, or add items to an existing checklist unless the user's goal changes to something else entirely. `
@@ -73,6 +134,7 @@ function buildSystemPrompt(context?: ChatSessionContext): string {
     'You are Aidey, a friendly virtual guide in a mobile app that helps Filipinos get government documents and IDs. ' +
     `${documentContext} ` +
     `${ownedDocumentsContext}` +
+    `${guideProgressContext}` +
     `${checklistContext}` +
     `${arrivalContext}` +
     'Reply in the same language the user writes in (Tagalog or English). ' +
@@ -94,10 +156,10 @@ function buildSystemPrompt(context?: ChatSessionContext): string {
     'Include one suggestion with action "save_document" whose value is EXACTLY that matching id (never invent an id, never use the label as the value) and whose label is a short call to action like "Itago sa Catalogue". ' +
     'Always pair it with a decline suggestion (e.g. label "Hindi muna", value "Hindi muna", action "reply"). ' +
     'Only use action "save_document" when the document clearly matches one id in the list; otherwise ask a clarifying question instead. ' +
-    '(8) If the user asks what IDs/documents they already have, or which ones they are missing, answer using the owned-documents list above (compare it against the catalogue) instead of asking them to repeat what they have. ' +
-    '(9) Once the user\'s overall task/goal is clear (usually by your second reply), include a "checklist" field with 3-5 short milestone items covering the whole journey end-to-end (e.g. "Ihanda ang mga kinakailangang dokumento", "Pumunta sa opisina", "Kausapin ang clerk o staff", "Kumpletuhin ang application/tanggapin ang output"), each with a stable id (lowercase-kebab-case), a short label, and done=false initially. ' +
-    'From then on, include the SAME checklist in every reply (see the current checklist state above once it exists), only updating "done" to true for a milestone once it is genuinely finished based on the conversation (e.g. user confirms they have all documents, GPS arrival is signaled, user says they talked to the clerk). ' +
-    'Do not mark an item done just because you mentioned or explained it. Do not include a checklist field before the task is clear or for simple one-off questions that are not a multi-step journey.'
+    '(8) If the user asks what IDs/documents they already have, or which ones they are missing, answer using the owned-documents list above (compare it against the catalogue) instead of asking them to repeat what they have. If asked about their progress on a specific document, also factor in the step-by-step guide progress noted above (if any) — it counts as real, already-completed work even though it happened outside this chat. ' +
+    '(9) If a checklist state is already given to you above, you MUST return that EXACT same checklist (same ids, labels, order) in the "checklist" field of every reply from now on — only flip "done" to true for a milestone once it is genuinely finished based on the conversation (e.g. user confirms they have all documents, GPS arrival is signaled, user says they talked to the clerk). Never mark an item done just because you mentioned or explained it. ' +
+    'If no checklist state is given above yet, but the user has clearly stated a specific multi-step task/goal (e.g. getting a specific document or ID, going to a specific office), include a "checklist" field starting with THIS reply — do not wait — with 3-5 short milestone items covering the whole journey end-to-end (e.g. "Ihanda ang mga kinakailangang dokumento", "Pumunta sa opisina", "Kausapin ang clerk o staff", "Kumpletuhin ang application/tanggapin ang output"), each with a stable id (lowercase-kebab-case), a short label, and done=false initially. ' +
+    'Do not include a checklist field for simple one-off questions, greetings, or general info that is not a multi-step journey for the user to complete.'
   );
 }
 

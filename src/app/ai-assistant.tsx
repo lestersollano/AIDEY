@@ -33,9 +33,11 @@ import {
   getMostRecentOpenSession,
   getChatSession,
   saveChatSession,
+  setChatSessionArchived,
   type ChatMessageRecord,
 } from '@/services/chat-sessions';
 import { useChatSessions } from '@/hooks/use-chat-sessions';
+import { useAllDocumentGuideProgress } from '@/hooks/use-document-guide-progress';
 import { useDocumentUploads } from '@/hooks/use-document-uploads';
 import { useLiveUserLocation } from '@/hooks/use-live-user-location';
 import {
@@ -49,6 +51,7 @@ import {
   shouldAutoFetchLocation,
 } from '@/services/office-finder';
 import {
+  createDefaultChecklist,
   createFallbackReply,
   WELCOME_SUGGESTIONS,
   type AideyReply,
@@ -97,6 +100,17 @@ function createMessage(
 
 function pressableStyle(baseStyle: object, pressedStyle: object) {
   return ({ pressed }: { pressed: boolean }) => [baseStyle, pressed && pressedStyle];
+}
+
+/** Recovers checklist progress from message history for sessions whose
+ * top-level checklist field was never populated (e.g. older records saved
+ * before that field existed), so resuming never resets real progress. */
+function findLastChecklistInMessages(messages: UiChatMessage[]): ChecklistItem[] | undefined {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const checklist = messages[i].structured?.checklist;
+    if (checklist?.length) return checklist;
+  }
+  return undefined;
 }
 
 function AssistantLoadingMessage() {
@@ -150,6 +164,7 @@ export default function AiAssistantScreen() {
 
   const documentUploads = useDocumentUploads();
   const ownedDocumentIds = Object.keys(documentUploads);
+  const documentGuideProgress = useAllDocumentGuideProgress();
   const canSend = message.trim().length > 0 && !isLoading;
   const mapIsRelevant = isMapRelevantInConversation(messages);
   const activeMapDestination = getActiveMapDestination(messages);
@@ -170,9 +185,18 @@ export default function AiAssistantScreen() {
         sessionCreationRef.current = Promise.resolve(session.id);
         setCurrentSessionId(session.id);
         setMessages(session.messages);
-        setChecklistItems(session.checklist);
+        setChecklistItems(
+          session.checklist.length
+            ? session.checklist
+            : findLastChecklistInMessages(session.messages) ??
+                (session.documentLabel ? createDefaultChecklist(session.documentLabel) : []),
+        );
         setActiveDocumentId((current) => current ?? session.documentId);
         setActiveDocumentLabel((current) => current ?? session.documentLabel);
+      } else if (initialDocumentLabel) {
+        // Seed a checklist immediately so it's visible right away instead of
+        // waiting on the AI to decide to include one in its first reply.
+        setChecklistItems(createDefaultChecklist(initialDocumentLabel));
       }
 
       setSessionResumed(true);
@@ -302,6 +326,7 @@ export default function AiAssistantScreen() {
       const reply = await sendMessage(history, arrivalMessage, {
         documentLabel: activeDocumentLabel,
         ownedDocumentIds,
+        documentGuideProgress,
         checklist: checklistItems.length ? checklistItems : undefined,
         atOfficeProximity: {
           officeName: destination.name,
@@ -381,6 +406,7 @@ export default function AiAssistantScreen() {
       const reply = await sendMessage(history, trimmed, {
         documentLabel: activeDocumentLabel,
         ownedDocumentIds,
+        documentGuideProgress,
         checklist: checklistItems.length ? checklistItems : undefined,
       });
 
@@ -505,6 +531,14 @@ export default function AiAssistantScreen() {
     setSidebarVisible(false);
   }
 
+  async function handleArchiveSession(sessionId: string, archived: boolean) {
+    await setChatSessionArchived(sessionId, archived);
+
+    if (archived && sessionId === currentSessionId) {
+      handleNewChat();
+    }
+  }
+
   function handleToggleChecklistItem(itemId: string, done: boolean) {
     setChecklistItems((current) =>
       current.map((item) => (item.id === itemId ? { ...item, done } : item)),
@@ -587,6 +621,9 @@ export default function AiAssistantScreen() {
         onClose={() => setSidebarVisible(false)}
         onNewChat={handleNewChat}
         onSelectSession={(sessionId) => void handleSelectSession(sessionId)}
+        onArchiveSession={(sessionId, archived) =>
+          void handleArchiveSession(sessionId, archived)
+        }
       />
 
       <KeyboardAvoidingView

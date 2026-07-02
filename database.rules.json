@@ -97,12 +97,53 @@
             }
           },
 
+          "archived": {
+            ".validate": "newData.isBoolean()"
+          },
+
           "createdAt": {
             ".validate": "newData.isNumber()"
           },
 
           "updatedAt": {
             ".validate": "newData.isNumber() && newData.val() <= now"
+          }
+        }
+      }
+    },
+
+    "documentGuideProgress": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+
+        "$documentId": {
+          ".validate": "newData.hasChildren(['updatedAt'])",
+
+          "checkedRequirements": {
+            "$index": {
+              ".validate": "newData.isNumber()"
+            }
+          },
+
+          "checkedSteps": {
+            "$index": {
+              ".validate": "newData.isNumber()"
+            }
+          },
+
+          "completedSections": {
+            "$index": {
+              ".validate": "newData.val() === 'requirements' || newData.val() === 'steps' || newData.val() === 'upload'"
+            }
+          },
+
+          "updatedAt": {
+            ".validate": "newData.isNumber() && newData.val() <= now"
+          },
+
+          "$other": {
+            ".validate": false
           }
         }
       }

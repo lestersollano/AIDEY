@@ -175,3 +175,16 @@ export function createFallbackReply(text: string): AideyReply {
     suggestions: FALLBACK_SUGGESTIONS,
   };
 }
+
+/** A generic end-to-end journey checklist, seeded client-side so it appears
+ * reliably instead of depending on the AI to decide to create one. */
+export function createDefaultChecklist(documentLabel?: string): ChecklistItem[] {
+  const suffix = documentLabel ? ` ng ${documentLabel}` : '';
+
+  return [
+    { id: 'gather-documents', label: `Ihanda ang mga kinakailangang dokumento${suffix}`, done: false },
+    { id: 'go-to-office', label: 'Pumunta sa opisina', done: false },
+    { id: 'talk-to-staff', label: 'Kausapin ang clerk o staff', done: false },
+    { id: 'complete-application', label: 'Kumpletuhin ang aplikasyon o tanggapin ang output', done: false },
+  ];
+}
