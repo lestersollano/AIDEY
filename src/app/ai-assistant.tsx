@@ -51,6 +51,7 @@ import {
   shouldAutoFetchLocation,
 } from '@/services/office-finder';
 import { useTranslation } from '@/contexts/locale-context';
+import { useAuth } from '@/contexts/auth-context';
 import {
   createLocalizedChecklist,
   createLocalizedFallbackReply,
@@ -133,6 +134,7 @@ function AssistantLoadingMessage() {
 
 export default function AiAssistantScreen() {
   const { locale, t } = useTranslation();
+  const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
   const autoSentRef = useRef(false);
@@ -182,8 +184,19 @@ export default function AiAssistantScreen() {
   useEffect(() => {
     let cancelled = false;
 
+    sessionCreationRef.current = null;
+    proximityTriggeredRef.current = null;
+
     void getMostRecentOpenSession().then((session) => {
       if (cancelled) return;
+
+      setSessionResumed(false);
+      setCurrentSessionId(null);
+      setMessages([]);
+      setChecklistItems([]);
+      setFinishedTaskIds(new Set());
+      setActiveDocumentId(initialDocumentId);
+      setActiveDocumentLabel(initialDocumentLabel);
 
       if (session) {
         sessionCreationRef.current = Promise.resolve(session.id);
@@ -209,8 +222,10 @@ export default function AiAssistantScreen() {
     return () => {
       cancelled = true;
     };
+    // Intentionally re-runs only on account switch (uid), not on every
+    // locale/param change — this mirrors resuming a session on cold start.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user?.uid]);
 
   useEffect(() => {
     if (messages.length === 0 && checklistItems.length === 0) return;

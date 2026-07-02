@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { Directory, File, Paths } from 'expo-file-system';
-import { ref as databaseRef, remove as databaseRemove, set as databaseSet } from 'firebase/database';
+import { get, ref as databaseRef, remove as databaseRemove, set as databaseSet } from 'firebase/database';
+import { AppState } from 'react-native';
 import {
   deleteObject,
   getDownloadURL,
@@ -13,7 +14,12 @@ import {
 import { auth, database, storage } from '@/lib/firebase';
 import { hasValidInternetConnection } from '@/utils/internet-connection';
 
-const STORAGE_KEY = 'document-uploads-v2';
+const STORAGE_KEY_PREFIX = 'document-uploads-v2';
+const LEGACY_STORAGE_KEY = 'document-uploads-v2';
+
+function getStorageKey(uid: string): string {
+  return `${STORAGE_KEY_PREFIX}:${uid}`;
+}
 
 export type DocumentUploadStatus = 'uploaded' | 'pending' | 'uploading';
 
@@ -31,26 +37,246 @@ type UploadMap = Record<string, DocumentImageRecord[]>;
 
 let cache: UploadMap | null = null;
 let pendingRead: Promise<UploadMap> | null = null;
+let cachedUid: string | null | undefined;
 const listeners = new Set<() => void>();
 
+/** Clears in-memory upload state. Call when the signed-in user changes. */
+export function resetDocumentUploadsStore(): void {
+  cache = null;
+  pendingRead = null;
+  cachedUid = undefined;
+  listeners.forEach((listener) => listener());
+}
+
+function invalidateIfUserChanged(uid: string | null): void {
+  if (cachedUid !== undefined && cachedUid !== uid) {
+    cache = null;
+    pendingRead = null;
+  }
+  cachedUid = uid;
+}
+
+type CloudImageRecord = { remoteUrl?: string; storagePath?: string; updatedAt?: number };
+
+/** Reads whatever image metadata the cloud knows about for this user. Used to
+ * backfill the local gallery after a reinstall or on a new device, where
+ * AsyncStorage is empty but the uploads still exist in Firebase. */
+async function hydrateFromCloud(): Promise<UploadMap> {
+  const uid = auth?.currentUser?.uid;
+  if (!database || !uid) return {};
+
+  const isOnline = await hasValidInternetConnection();
+  if (!isOnline) return {};
+
+  try {
+    const snapshot = await get(databaseRef(database, `documentUploads/${uid}`));
+    if (!snapshot.exists()) return {};
+
+    const raw = snapshot.val() as Record<string, Record<string, CloudImageRecord>>;
+    const map: UploadMap = {};
+
+    for (const [documentId, images] of Object.entries(raw)) {
+      const records: DocumentImageRecord[] = [];
+
+      for (const [imageId, value] of Object.entries(images ?? {})) {
+        if (!value?.remoteUrl) continue;
+
+        records.push({
+          id: imageId,
+          documentId,
+          // Displays straight from the cloud until the quiet background
+          // download below finishes writing a local copy of the file.
+          localUri: value.remoteUrl,
+          remoteUrl: value.remoteUrl,
+          storagePath: value.storagePath,
+          status: 'uploaded',
+          updatedAt: value.updatedAt ?? Date.now(),
+        });
+      }
+
+      if (records.length > 0) {
+        map[documentId] = records;
+      }
+    }
+
+    return map;
+  } catch (error) {
+    console.warn('Failed to hydrate document uploads from cloud', error);
+    return {};
+  }
+}
+
+function getExtensionFromStoragePath(storagePath: string | undefined): string {
+  const match = storagePath?.match(/(\.[a-zA-Z0-9]+)$/);
+  return match ? match[1] : '.jpg';
+}
+
+/** Quietly backfills local copies of images that exist in the cloud but not
+ * yet on this device (e.g. right after `hydrateFromCloud`), so the gallery
+ * keeps working offline once each download finishes. Records display fine
+ * in the meantime since their `localUri` already points at the remote URL. */
+async function downloadMissingLocalFiles(map: UploadMap): Promise<void> {
+  const directory = getDocumentsDirectory();
+
+  for (const [documentId, images] of Object.entries(map)) {
+    for (const image of images) {
+      if (!image.remoteUrl || image.localUri !== image.remoteUrl) continue;
+
+      try {
+        const extension = getExtensionFromStoragePath(image.storagePath);
+        const destination = new File(directory, `${documentId}-${image.id}${extension}`);
+        const downloaded = await File.downloadFileAsync(image.remoteUrl, destination, {
+          idempotent: true,
+        });
+
+        const latestMap = await readMap();
+        const currentImages = latestMap[documentId];
+        if (!currentImages?.some((item) => item.id === image.id)) continue;
+
+        latestMap[documentId] = currentImages.map((item) =>
+          item.id === image.id ? { ...item, localUri: downloaded.uri } : item,
+        );
+        await writeMap(latestMap);
+      } catch (error) {
+        console.warn(`Failed to download document image ${documentId}/${image.id}`, error);
+      }
+    }
+  }
+}
+
+let isSyncingUploads = false;
+
+/** Reconciles local uploads with the cloud: adopts images added on another
+ * device (and quietly downloads them), and removes previously-synced images
+ * that were deleted elsewhere. Images still `pending`/`uploading` locally are
+ * left alone since the cloud doesn't know about them yet. */
+export async function syncDocumentUploadsWithCloud(): Promise<void> {
+  const uid = auth?.currentUser?.uid;
+  if (!database || !uid || isSyncingUploads) return;
+
+  isSyncingUploads = true;
+
+  try {
+    const isOnline = await hasValidInternetConnection();
+    if (!isOnline) return;
+
+    const [local, remote] = await Promise.all([readMap(), hydrateFromCloud()]);
+
+    let changed = false;
+    const merged: UploadMap = {};
+    const removedImages: DocumentImageRecord[] = [];
+    const documentIds = new Set([...Object.keys(local), ...Object.keys(remote)]);
+
+    for (const documentId of documentIds) {
+      const localImages = local[documentId] ?? [];
+      const remoteImages = remote[documentId] ?? [];
+      const remoteById = new Map(remoteImages.map((image) => [image.id, image]));
+      const localIds = new Set(localImages.map((image) => image.id));
+
+      const kept = localImages.filter((image) => {
+        // Prune images this device previously synced but that no longer
+        // exist in the cloud (deleted from another device). Anything not
+        // yet uploaded here is left alone — the cloud simply doesn't know
+        // about it yet.
+        if (image.status === 'uploaded' && !remoteById.has(image.id)) {
+          changed = true;
+          removedImages.push(image);
+          return false;
+        }
+        return true;
+      });
+
+      const added = remoteImages.filter((image) => !localIds.has(image.id));
+      if (added.length > 0) {
+        changed = true;
+      }
+
+      const images = [...kept, ...added];
+      if (images.length > 0) {
+        merged[documentId] = images;
+      }
+    }
+
+    if (!changed) return;
+
+    await writeMap(merged);
+    void downloadMissingLocalFiles(merged);
+
+    for (const image of removedImages) {
+      try {
+        const localFile = new File(image.localUri);
+        if (localFile.exists) {
+          localFile.delete();
+        }
+      } catch (error) {
+        console.warn(`Failed to delete local file for removed image ${image.id}`, error);
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to sync document uploads with cloud', error);
+  } finally {
+    isSyncingUploads = false;
+  }
+}
+
 async function readMap(): Promise<UploadMap> {
+  const uid = auth?.currentUser?.uid ?? null;
+  invalidateIfUserChanged(uid);
+
+  if (!uid) {
+    return {};
+  }
+
   if (cache) {
     return cache;
   }
 
   if (!pendingRead) {
-    pendingRead = AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
-      cache = raw ? (JSON.parse(raw) as UploadMap) : {};
-      return cache;
-    });
+    const storageKey = getStorageKey(uid);
+    pendingRead = (async () => {
+      let raw = await AsyncStorage.getItem(storageKey);
+
+      // One-time migration from the pre-user-scoped storage key.
+      if (!raw) {
+        raw = await AsyncStorage.getItem(LEGACY_STORAGE_KEY);
+        if (raw) {
+          await AsyncStorage.setItem(storageKey, raw);
+          await AsyncStorage.removeItem(LEGACY_STORAGE_KEY);
+        }
+      }
+
+      const rawLocal = raw ? (JSON.parse(raw) as UploadMap) : {};
+
+      if (Object.keys(rawLocal).length > 0) {
+        cache = rawLocal;
+        // Local already has data, so this device won't otherwise notice
+        // uploads added/removed on another device — reconcile quietly.
+        void syncDocumentUploadsWithCloud();
+        return rawLocal;
+      }
+
+      const remote = await hydrateFromCloud();
+      cache = remote;
+
+      if (Object.keys(remote).length > 0) {
+        await AsyncStorage.setItem(storageKey, JSON.stringify(remote));
+        void downloadMissingLocalFiles(remote);
+      }
+
+      return remote;
+    })();
   }
 
   return pendingRead;
 }
 
 async function writeMap(map: UploadMap) {
+  const uid = auth?.currentUser?.uid;
+  if (!uid) return;
+
+  cachedUid = uid;
   cache = map;
-  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+  await AsyncStorage.setItem(getStorageKey(uid), JSON.stringify(map));
   listeners.forEach((listener) => listener());
 }
 
@@ -287,5 +513,12 @@ export async function retryPendingDocumentUploads(): Promise<void> {
 NetInfo.addEventListener((state) => {
   if (state.isConnected && state.isInternetReachable !== false) {
     void retryPendingDocumentUploads();
+    void syncDocumentUploadsWithCloud();
+  }
+});
+
+AppState.addEventListener('change', (state) => {
+  if (state === 'active') {
+    void syncDocumentUploadsWithCloud();
   }
 });

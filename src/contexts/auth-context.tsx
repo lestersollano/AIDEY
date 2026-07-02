@@ -3,6 +3,9 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 
 import { isFirebaseConfigured } from '@/constants/firebase';
 import { auth } from '@/lib/firebase';
+import { resetChatSessionsStore } from '@/services/chat-sessions';
+import { resetDocumentGuideProgressStore } from '@/services/document-guide-progress';
+import { resetDocumentUploadsStore } from '@/services/document-uploads';
 import { clearSessionExpiry, isSessionExpired } from '@/utils/auth-session';
 
 type AuthContextValue = {
@@ -25,6 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const firebaseAuth = auth;
+    let previousUid: string | undefined;
 
     return onAuthStateChanged(firebaseAuth, (nextUser) => {
       void (async () => {
@@ -34,6 +38,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(null);
           setIsLoading(false);
           return;
+        }
+
+        const nextUid = nextUser?.uid;
+        if (previousUid !== nextUid) {
+          resetChatSessionsStore();
+          resetDocumentUploadsStore();
+          resetDocumentGuideProgressStore();
+          previousUid = nextUid;
         }
 
         setUser(nextUser);

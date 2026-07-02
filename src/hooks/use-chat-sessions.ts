@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { useAuth } from '@/contexts/auth-context';
 import {
   listChatSessions,
   subscribeToChatSessions,
@@ -7,6 +8,7 @@ import {
 } from '@/services/chat-sessions';
 
 export function useChatSessions() {
+  const { user } = useAuth();
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
 
   const refresh = useCallback(() => {
@@ -16,7 +18,7 @@ export function useChatSessions() {
   useEffect(() => {
     refresh();
     return subscribeToChatSessions(refresh);
-  }, [refresh]);
+  }, [refresh, user?.uid]);
 
   return sessions;
 }

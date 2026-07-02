@@ -1,11 +1,17 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { get, ref as databaseRef, set as databaseSet } from 'firebase/database';
+import { AppState } from 'react-native';
 
 import { auth, database } from '@/lib/firebase';
 import { hasValidInternetConnection } from '@/utils/internet-connection';
 
-const STORAGE_KEY = 'document-guide-progress-v1';
+const STORAGE_KEY_PREFIX = 'document-guide-progress-v1';
+const LEGACY_STORAGE_KEY = 'document-guide-progress-v1';
+
+function getStorageKey(uid: string): string {
+  return `${STORAGE_KEY_PREFIX}:${uid}`;
+}
 
 export type DocumentGuideSection = 'requirements' | 'steps' | 'upload';
 
@@ -29,7 +35,24 @@ const VALID_SECTIONS: DocumentGuideSection[] = ['requirements', 'steps', 'upload
 
 let cache: ProgressMap | null = null;
 let pendingRead: Promise<ProgressMap> | null = null;
+let cachedUid: string | null | undefined;
 const listeners = new Set<() => void>();
+
+/** Clears in-memory progress state. Call when the signed-in user changes. */
+export function resetDocumentGuideProgressStore(): void {
+  cache = null;
+  pendingRead = null;
+  cachedUid = undefined;
+  listeners.forEach((listener) => listener());
+}
+
+function invalidateIfUserChanged(uid: string | null): void {
+  if (cachedUid !== undefined && cachedUid !== uid) {
+    cache = null;
+    pendingRead = null;
+  }
+  cachedUid = uid;
+}
 
 function normalizeProgress(value: Partial<DocumentGuideProgress> | null | undefined): DocumentGuideProgress {
   return {
@@ -76,17 +99,41 @@ async function hydrateFromCloud(): Promise<ProgressMap> {
 }
 
 async function readMap(): Promise<ProgressMap> {
+  const uid = auth?.currentUser?.uid ?? null;
+  invalidateIfUserChanged(uid);
+
+  if (!uid) {
+    return {};
+  }
+
   if (cache) {
     return cache;
   }
 
   if (!pendingRead) {
-    pendingRead = AsyncStorage.getItem(STORAGE_KEY).then(async (raw) => {
-      const rawLocal = raw ? (JSON.parse(raw) as Record<string, Partial<DocumentGuideProgress>>) : {};
+    const storageKey = getStorageKey(uid);
+    pendingRead = (async () => {
+      let raw = await AsyncStorage.getItem(storageKey);
+
+      // One-time migration from the pre-user-scoped storage key.
+      if (!raw) {
+        raw = await AsyncStorage.getItem(LEGACY_STORAGE_KEY);
+        if (raw) {
+          await AsyncStorage.setItem(storageKey, raw);
+          await AsyncStorage.removeItem(LEGACY_STORAGE_KEY);
+        }
+      }
+
+      const rawLocal = raw
+        ? (JSON.parse(raw) as Record<string, Partial<DocumentGuideProgress>>)
+        : {};
 
       if (Object.keys(rawLocal).length > 0) {
         const local = normalizeProgressMap(rawLocal);
         cache = local;
+        // Local already has data, so this device won't otherwise notice
+        // progress made on another device — reconcile quietly.
+        void syncDocumentGuideProgressWithCloud();
         return local;
       }
 
@@ -94,19 +141,23 @@ async function readMap(): Promise<ProgressMap> {
       cache = remote;
 
       if (Object.keys(remote).length > 0) {
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(remote));
+        await AsyncStorage.setItem(storageKey, JSON.stringify(remote));
       }
 
       return remote;
-    });
+    })();
   }
 
   return pendingRead;
 }
 
 async function writeMap(map: ProgressMap) {
+  const uid = auth?.currentUser?.uid;
+  if (!uid) return;
+
+  cachedUid = uid;
   cache = map;
-  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+  await AsyncStorage.setItem(getStorageKey(uid), JSON.stringify(map));
   listeners.forEach((listener) => listener());
 }
 
@@ -121,6 +172,52 @@ async function syncProgressToCloud(documentId: string, progress: DocumentGuidePr
     await databaseSet(databaseRef(database, `documentGuideProgress/${uid}/${documentId}`), progress);
   } catch (error) {
     console.warn(`Failed to sync document guide progress for ${documentId} to cloud`, error);
+  }
+}
+
+let isSyncingGuideProgress = false;
+
+/** Reconciles local guide progress with the cloud, keeping whichever version
+ * of each document's progress is newer (by `updatedAt`) and pushing any
+ * local progress the cloud is missing (e.g. saved while offline). This is
+ * what lets progress made on one phone show up on another. */
+export async function syncDocumentGuideProgressWithCloud(): Promise<void> {
+  const uid = auth?.currentUser?.uid;
+  if (!database || !uid || isSyncingGuideProgress) return;
+
+  isSyncingGuideProgress = true;
+
+  try {
+    const isOnline = await hasValidInternetConnection();
+    if (!isOnline) return;
+
+    const [local, remote] = await Promise.all([readMap(), hydrateFromCloud()]);
+
+    let changed = false;
+    const merged: ProgressMap = { ...local };
+
+    for (const [documentId, remoteProgress] of Object.entries(remote)) {
+      const localProgress = local[documentId];
+      if (!localProgress || remoteProgress.updatedAt > localProgress.updatedAt) {
+        merged[documentId] = remoteProgress;
+        changed = true;
+      }
+    }
+
+    for (const [documentId, localProgress] of Object.entries(local)) {
+      const remoteProgress = remote[documentId];
+      if (!remoteProgress || localProgress.updatedAt > remoteProgress.updatedAt) {
+        void syncProgressToCloud(documentId, localProgress);
+      }
+    }
+
+    if (changed) {
+      await writeMap(merged);
+    }
+  } catch (error) {
+    console.warn('Failed to sync document guide progress with cloud', error);
+  } finally {
+    isSyncingGuideProgress = false;
   }
 }
 
@@ -221,5 +318,12 @@ export async function retryDocumentGuideProgressSync(): Promise<void> {
 NetInfo.addEventListener((state) => {
   if (state.isConnected && state.isInternetReachable !== false) {
     void retryDocumentGuideProgressSync();
+    void syncDocumentGuideProgressWithCloud();
+  }
+});
+
+AppState.addEventListener('change', (state) => {
+  if (state === 'active') {
+    void syncDocumentGuideProgressWithCloud();
   }
 });
