@@ -59,7 +59,6 @@ export default function RootLayout() {
               <Stack.Screen name="index" options={fadeScreenOptions} />
               <Stack.Screen name="sign-in" options={fadeScreenOptions} />
               <Stack.Screen name="account" options={fadeScreenOptions} />
-              <Stack.Screen name="settings" options={fadeScreenOptions} />
               <Stack.Screen name="language" options={fadeScreenOptions} />
               <Stack.Screen name="ai-assistant" options={fadeScreenOptions} />
               <Stack.Screen name="map-directions" options={fadeScreenOptions} />

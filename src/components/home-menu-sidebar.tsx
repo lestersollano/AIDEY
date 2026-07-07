@@ -1,16 +1,30 @@
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import type { ComponentProps } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  Dimensions,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ScreenHeader } from '@/components/screen-header';
+import { AideyWordmark } from '@/components/aidey-wordmark';
 import { Text } from '@/components/text';
 import { useAuth } from '@/contexts/auth-context';
 import { useTranslation } from '@/contexts/locale-context';
 import { brand, colors } from '@/constants/colors';
 import { fonts } from '@/constants/fonts';
 import { LOCALE_LABELS } from '@/i18n/types';
+
+const SIDEBAR_WIDTH = Math.min(320, Dimensions.get('window').width * 0.82);
+
+const OPEN_DURATION = 220;
+const CLOSE_DURATION = 200;
 
 type SymbolViewName = ComponentProps<typeof SymbolView>['name'];
 type PlatformSymbolName = Extract<SymbolViewName, { ios?: unknown }>;
@@ -20,6 +34,11 @@ type SettingsOption = {
   label: string;
   subtitle?: string;
   icon: PlatformSymbolName;
+};
+
+type HomeMenuSidebarProps = {
+  visible: boolean;
+  onClose: () => void;
 };
 
 function SettingsRow({
@@ -77,9 +96,13 @@ function SettingsSection({
   );
 }
 
-export default function SettingsScreen() {
+export function HomeMenuSidebar({ visible, onClose }: HomeMenuSidebarProps) {
   const { user } = useAuth();
   const { locale, t } = useTranslation();
+  const [modalVisible, setModalVisible] = useState(false);
+  const isShownRef = useRef(false);
+  const translateX = useRef(new Animated.Value(-SIDEBAR_WIDTH)).current;
+  const backdropOpacity = useRef(new Animated.Value(0)).current;
 
   const generalOptions: SettingsOption[] = [
     {
@@ -127,7 +150,58 @@ export default function SettingsScreen() {
       : option,
   );
 
+  useEffect(() => {
+    if (visible) {
+      translateX.stopAnimation();
+      backdropOpacity.stopAnimation();
+      isShownRef.current = true;
+      setModalVisible(true);
+      translateX.setValue(-SIDEBAR_WIDTH);
+      backdropOpacity.setValue(0);
+      Animated.parallel([
+        Animated.timing(translateX, {
+          toValue: 0,
+          duration: OPEN_DURATION,
+          useNativeDriver: true,
+        }),
+        Animated.timing(backdropOpacity, {
+          toValue: 1,
+          duration: OPEN_DURATION,
+          useNativeDriver: true,
+        }),
+      ]).start();
+      return;
+    }
+
+    if (!isShownRef.current) {
+      return;
+    }
+
+    Animated.parallel([
+      Animated.timing(translateX, {
+        toValue: -SIDEBAR_WIDTH,
+        duration: CLOSE_DURATION,
+        useNativeDriver: true,
+      }),
+      Animated.timing(backdropOpacity, {
+        toValue: 0,
+        duration: CLOSE_DURATION,
+        useNativeDriver: true,
+      }),
+    ]).start(({ finished }) => {
+      if (finished) {
+        isShownRef.current = false;
+        setModalVisible(false);
+      }
+    });
+  }, [visible, translateX, backdropOpacity]);
+
+  function handleClose() {
+    onClose();
+  }
+
   function handleOptionPress(option: SettingsOption) {
+    handleClose();
     if (option.id === 'account') {
       router.push('/account');
     } else if (option.id === 'language') {
@@ -136,52 +210,84 @@ export default function SettingsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScreenHeader
-        title={<Text style={styles.headerTitle}>{t('settings.title')}</Text>}
-      />
-
-      <View style={styles.scrollContainer}>
-        <ScrollView
-          style={styles.scrollArea}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}>
-          <SettingsSection
-            title={t('settings.general')}
-            options={generalOptionsWithAccount}
-            onOptionPress={handleOptionPress}
+    <Modal
+      visible={modalVisible}
+      transparent
+      animationType="none"
+      onRequestClose={handleClose}>
+      <View style={styles.root}>
+        <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            accessibilityLabel={t('common.close')}
+            onPress={handleClose}
           />
-          <SettingsSection title={t('settings.support')} options={supportOptions} />
-        </ScrollView>
+        </Animated.View>
+
+        <Animated.View
+          style={[styles.panel, { width: SIDEBAR_WIDTH, transform: [{ translateX }] }]}>
+          <SafeAreaView style={styles.panelContent} edges={['top', 'bottom', 'left']}>
+            <View style={styles.header}>
+              <AideyWordmark style={styles.title} />
+            </View>
+
+            <ScrollView
+              style={styles.scrollArea}
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={false}>
+              <SettingsSection
+                title={t('settings.general')}
+                options={generalOptionsWithAccount}
+                onOptionPress={handleOptionPress}
+              />
+              <SettingsSection title={t('settings.support')} options={supportOptions} />
+            </ScrollView>
+          </SafeAreaView>
+        </Animated.View>
       </View>
-    </SafeAreaView>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
+    flexDirection: 'row',
+  },
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 22, 106, 0.35)',
+  },
+  panel: {
+    height: '100%',
     backgroundColor: colors.primary,
-    paddingHorizontal: 24,
-    paddingTop: 16,
+    shadowColor: brand.navy,
+    shadowOffset: { width: 2, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  headerTitle: {
-    fontSize: 17,
-    fontFamily: fonts.semiBold,
-    color: brand.navy,
-    textAlign: 'center',
-  },
-  scrollContainer: {
+  panelContent: {
     flex: 1,
-    marginHorizontal: -24,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  header: {
+    paddingVertical: 16,
+    paddingHorizontal: 4,
+  },
+  title: {
+    fontSize: 22,
   },
   scrollArea: {
     flex: 1,
   },
   scrollContent: {
     gap: 24,
-    paddingHorizontal: 24,
-    paddingTop: 16,
     paddingBottom: 32,
   },
   section: {

@@ -1,10 +1,12 @@
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
+import { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AideyWordmark } from "@/components/aidey-wordmark";
+import { HomeMenuSidebar } from "@/components/home-menu-sidebar";
 import { Text } from "@/components/text";
 import { useTranslation } from "@/contexts/locale-context";
 import { brand, colors } from "@/constants/colors";
@@ -19,9 +21,15 @@ function pressableStyle(baseStyle: object, pressedStyle: object) {
 
 export default function HomeScreen() {
     const { t } = useTranslation();
+    const [menuVisible, setMenuVisible] = useState(false);
 
     return (
         <SafeAreaView style={styles.container}>
+            <HomeMenuSidebar
+                visible={menuVisible}
+                onClose={() => setMenuVisible(false)}
+            />
+
             <View style={styles.content}>
                 <View style={styles.header}>
                     <Pressable
@@ -30,6 +38,7 @@ export default function HomeScreen() {
                             styles.headerButtonPressed,
                         )}
                         accessibilityLabel={t("common.menu")}
+                        onPress={() => setMenuVisible(true)}
                     >
                         <SymbolView
                             name={{
@@ -42,24 +51,7 @@ export default function HomeScreen() {
                         />
                     </Pressable>
                     <AideyWordmark style={styles.title} />
-                    <Pressable
-                        style={pressableStyle(
-                            styles.headerButton,
-                            styles.headerButtonPressed,
-                        )}
-                        accessibilityLabel={t("common.settings")}
-                        onPress={() => router.push("/settings")}
-                    >
-                        <SymbolView
-                            name={{
-                                ios: "gearshape",
-                                android: "settings",
-                                web: "settings",
-                            }}
-                            size={24}
-                            tintColor={colors.secondary}
-                        />
-                    </Pressable>
+                    <View style={styles.headerSpacer} />
                 </View>
 
                 <View style={styles.buttons}>
@@ -185,6 +177,10 @@ const styles = StyleSheet.create({
     headerButtonPressed: {
         opacity: 0.5,
         backgroundColor: colors.secondaryMuted,
+    },
+    headerSpacer: {
+        width: 40,
+        height: 40,
     },
     title: {
         flex: 1,
