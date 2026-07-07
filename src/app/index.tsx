@@ -3,7 +3,7 @@ import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AideyWordmark } from "@/components/aidey-wordmark";
 import { HomeMenuSidebar } from "@/components/home-menu-sidebar";
@@ -22,9 +22,10 @@ function pressableStyle(baseStyle: object, pressedStyle: object) {
 export default function HomeScreen() {
     const { t } = useTranslation();
     const [menuVisible, setMenuVisible] = useState(false);
+    const insets = useSafeAreaInsets();
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
             <HomeMenuSidebar
                 visible={menuVisible}
                 onClose={() => setMenuVisible(false)}
@@ -95,48 +96,25 @@ export default function HomeScreen() {
                             />
                         </View>
                     </Pressable>
-                    <Pressable
-                        style={pressableStyle(
-                            styles.button,
-                            styles.buttonPressed,
-                        )}
-                        android_ripple={{ color: "rgba(1, 154, 143, 0.12)" }}
-                        onPress={() => router.push("/ai-assistant")}
-                    >
-                        <View style={styles.buttonRow}>
-                            <View
-                                style={[
-                                    styles.buttonMedia,
-                                    styles.buttonMediaAi,
-                                ]}
-                            >
-                                <Image
-                                    source={require("@/assets/images/mascot/cropped/magpatulongsaai.png")}
-                                    style={styles.buttonIcon}
-                                    contentFit="contain"
-                                />
-                            </View>
-                            <View style={styles.buttonTextWrapper}>
-                                <Text style={styles.buttonTextAi}>
-                                    {t("home.aiTitle")}
-                                </Text>
-                                <Text style={styles.buttonSubtextAi}>
-                                    {t("home.aiSubtitle")}
-                                </Text>
-                            </View>
-                            <SymbolView
-                                name={{
-                                    ios: "chevron.right",
-                                    android: "chevron_right",
-                                    web: "chevron_right",
-                                }}
-                                size={18}
-                                tintColor={brand.teal}
-                            />
-                        </View>
-                    </Pressable>
                 </View>
             </View>
+
+            <Pressable
+                style={({ pressed }) => [
+                    styles.aiFab,
+                    { bottom: insets.bottom + 24 },
+                    pressed && styles.aiFabPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={t("home.aiTitle")}
+                onPress={() => router.push("/ai-assistant")}
+            >
+                <Image
+                    source={require("@/assets/images/mascot/cropped/magpatulongsaai.png")}
+                    style={styles.aiFabImage}
+                    contentFit="cover"
+                />
+            </Pressable>
         </SafeAreaView>
     );
 }
@@ -214,9 +192,6 @@ const styles = StyleSheet.create({
     buttonMediaDocuments: {
         backgroundColor: "rgba(0, 22, 106, 0.06)",
     },
-    buttonMediaAi: {
-        backgroundColor: "rgba(1, 154, 143, 0.08)",
-    },
     buttonIcon: {
         width: 64,
         height: 64,
@@ -230,19 +205,35 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontFamily: fonts.semiBold,
     },
-    buttonTextAi: {
-        color: brand.teal,
-        fontSize: 16,
-        fontFamily: fonts.semiBold,
-    },
     buttonSubtext: {
         fontSize: 13,
         color: "rgba(0, 22, 106, 0.55)",
         fontFamily: fonts.regular,
     },
-    buttonSubtextAi: {
-        fontSize: 13,
-        color: "rgba(1, 154, 143, 0.65)",
-        fontFamily: fonts.regular,
+    aiFab: {
+        position: "absolute",
+        right: 24,
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: colors.primary,
+        alignItems: "center",
+        justifyContent: "center",
+        overflow: "hidden",
+        borderWidth: 1,
+        borderColor: colors.secondaryBorder,
+        shadowColor: brand.navy,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 6,
+    },
+    aiFabPressed: {
+        opacity: 0.9,
+        transform: [{ scale: 0.96 }],
+    },
+    aiFabImage: {
+        width: 64,
+        height: 64,
     },
 });
