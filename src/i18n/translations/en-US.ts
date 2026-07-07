@@ -73,6 +73,8 @@ export const enUS: TranslationTree = {
     title: 'Documents & IDs',
     searchPlaceholder: 'Type what you need here',
     empty: 'No documents found.',
+    loading: 'Loading your documents...',
+    syncing: 'Syncing...',
     speechToText: 'Speech to text',
     helpPrompt:
       "I don't have a {{label}} yet. How do I get one and what are the requirements?",
@@ -127,6 +129,7 @@ export const enUS: TranslationTree = {
       uploadPhoto: 'Upload {{title}}',
       uploadMore: 'Upload another photo',
       libraryHint: 'Tap to choose a photo',
+      downloading: 'Downloading photo from your other device...',
     },
   },
   ai: {

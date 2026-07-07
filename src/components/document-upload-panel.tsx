@@ -9,10 +9,12 @@ import { Text } from '@/components/text';
 import { useTranslation } from '@/contexts/locale-context';
 import { brand, colors } from '@/constants/colors';
 import { fonts } from '@/constants/fonts';
+import { useDocumentUploadsSyncStatus } from '@/hooks/use-document-uploads';
 import {
   addDocumentImage,
   getDocumentImages,
   removeDocumentImage,
+  subscribeToDocumentUploads,
   type DocumentImageRecord,
 } from '@/services/document-uploads';
 
@@ -27,12 +29,18 @@ export function DocumentUploadPanel({ documentId, title, onImagesChange }: Docum
   const [images, setImages] = useState<DocumentImageRecord[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const { isLoading, isSyncing } = useDocumentUploadsSyncStatus();
 
   const refresh = useCallback(() => {
     void getDocumentImages(documentId).then(setImages);
   }, [documentId]);
 
   useFocusEffect(refresh);
+
+  // Keeps the gallery in sync while this screen stays open — e.g. once a
+  // background image download finishes, or another device adds/removes a
+  // photo for this document.
+  useEffect(() => subscribeToDocumentUploads(refresh), [refresh]);
 
   useEffect(() => {
     onImagesChange?.(images);
@@ -122,44 +130,87 @@ export function DocumentUploadPanel({ documentId, title, onImagesChange }: Docum
 
   return (
     <View style={styles.container}>
-      {hasImages ? (
-        <View style={styles.gallery}>
-          {images.map((image) => (
-            <View key={image.id} style={styles.galleryItem}>
-              <Image source={{ uri: image.localUri }} style={styles.galleryImage} contentFit="cover" />
-
-              <Pressable
-                style={({ pressed }) => [styles.removeButton, pressed && styles.removeButtonPressed]}
-                disabled={removingId === image.id}
-                onPress={() => handleRemoveImage(image)}
-                accessibilityRole="button"
-                accessibilityLabel={t('documents.upload.removeA11y')}>
-                {removingId === image.id ? (
-                  <ActivityIndicator size="small" color={colors.primary} />
-                ) : (
-                  <SymbolView
-                    name={{ ios: 'xmark', android: 'close', web: 'close' }}
-                    size={14}
-                    tintColor={colors.primary}
-                  />
-                )}
-              </Pressable>
-
-              <View style={styles.galleryStatus}>
-                <SymbolView
-                  name={
-                    image.status === 'uploaded'
-                      ? { ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }
-                      : { ios: 'icloud.and.arrow.up', android: 'cloud_upload', web: 'cloud_upload' }
-                  }
-                  size={14}
-                  tintColor={image.status === 'uploaded' ? brand.teal : colors.primary}
-                />
-              </View>
-            </View>
-          ))}
+      {isLoading ? (
+        <View style={styles.loadingState}>
+          <ActivityIndicator size="large" color={brand.navy} />
+          <Text style={styles.loadingText}>{t('documents.loading')}</Text>
         </View>
-      ) : null}
+      ) : (
+        <>
+          {isSyncing ? (
+            <View style={styles.syncingBanner}>
+              <ActivityIndicator size="small" color={brand.navy} />
+              <Text style={styles.syncingText}>{t('documents.syncing')}</Text>
+            </View>
+          ) : null}
+
+          {hasImages ? (
+            <View style={styles.gallery}>
+              {images.map((image) => {
+                // Still shown straight from the cloud URL while the quiet
+                // background download writes a local copy for offline use.
+                const isDownloading = Boolean(image.remoteUrl) && image.localUri === image.remoteUrl;
+
+                return (
+                  <View key={image.id} style={styles.galleryItem}>
+                    <Image
+                      source={{ uri: image.localUri }}
+                      style={styles.galleryImage}
+                      contentFit="cover"
+                    />
+
+                    {isDownloading ? (
+                      <View
+                        style={styles.downloadingOverlay}
+                        accessibilityLabel={t('documents.upload.downloading')}>
+                        <ActivityIndicator size="small" color={colors.primary} />
+                      </View>
+                    ) : null}
+
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.removeButton,
+                        pressed && styles.removeButtonPressed,
+                      ]}
+                      disabled={removingId === image.id}
+                      onPress={() => handleRemoveImage(image)}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('documents.upload.removeA11y')}>
+                      {removingId === image.id ? (
+                        <ActivityIndicator size="small" color={colors.primary} />
+                      ) : (
+                        <SymbolView
+                          name={{ ios: 'xmark', android: 'close', web: 'close' }}
+                          size={14}
+                          tintColor={colors.primary}
+                        />
+                      )}
+                    </Pressable>
+
+                    {!isDownloading ? (
+                      <View style={styles.galleryStatus}>
+                        <SymbolView
+                          name={
+                            image.status === 'uploaded'
+                              ? {
+                                  ios: 'checkmark.circle.fill',
+                                  android: 'check_circle',
+                                  web: 'check_circle',
+                                }
+                              : { ios: 'icloud.and.arrow.up', android: 'cloud_upload', web: 'cloud_upload' }
+                          }
+                          size={14}
+                          tintColor={image.status === 'uploaded' ? brand.teal : colors.primary}
+                        />
+                      </View>
+                    ) : null}
+                  </View>
+                );
+              })}
+            </View>
+          ) : null}
+        </>
+      )}
 
       <Pressable
         style={({ pressed }) => [styles.uploadCard, pressed && styles.uploadCardPressed]}
@@ -240,6 +291,28 @@ const styles = StyleSheet.create({
   container: {
     gap: 12,
   },
+  loadingState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    paddingVertical: 32,
+  },
+  loadingText: {
+    fontSize: 14,
+    fontFamily: fonts.regular,
+    color: colors.secondary,
+    textAlign: 'center',
+  },
+  syncingBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  syncingText: {
+    fontSize: 13,
+    fontFamily: fonts.regular,
+    color: colors.secondary,
+  },
   gallery: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -259,6 +332,12 @@ const styles = StyleSheet.create({
   galleryImage: {
     width: '100%',
     height: '100%',
+  },
+  downloadingOverlay: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 22, 106, 0.25)',
   },
   removeButton: {
     position: 'absolute',

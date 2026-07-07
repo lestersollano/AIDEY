@@ -1,0 +1,480 @@
+================================================================================
+AIDEY — APP REFERENCE SUMMARY
+================================================================================
+Generated: 2026-07-07
+Purpose: Context document for use with other LLMs
+Project path: /Users/matthew/Projects/GLAK/aidey
+Live site: https://aidey.web.app
+GitHub: https://github.com/lestersollano/AIDEY
+Team: GLAK (SparkFest 2026 / GDG PUP)
+
+================================================================================
+WHAT IS AIDEY?
+================================================================================
+
+AIDEY (Ang Gabay sa Dokumento at ID) is a Filipino government document and
+ID guide — a journey-centered mobile companion for navigating Philippine
+bureaucratic paperwork.
+
+Tagline: "Because every opportunity begins with a document… and every
+document should begin with AIDEY."
+
+The app is NOT information-dump style. It walks users through each stage of
+getting a government document, unlocking the next step only when ready.
+
+Problems it solves:
+- Scattered, outdated requirements across dozens of agencies
+- "ID to get an ID" dependency chains
+- Wasted trips to government offices with incomplete requirements
+- Confusion around National ID and where to start
+
+================================================================================
+TECH STACK
+================================================================================
+
+Language:        TypeScript
+Mobile:          React Native 0.85 + Expo SDK 56
+Routing:         Expo Router (file-based, src/app/)
+Package manager: pnpm
+Auth:            Firebase Auth (email/password)
+Database:        Firebase Realtime Database (chat, progress, upload metadata)
+Storage:         Firebase Cloud Storage (ID photos)
+AI:              Google Gemini API (@google/genai)
+Maps:            Google Maps Platform (Routes API, Places API, Maps SDK)
+Hosting:         Firebase Hosting (static marketing site at aidey.web.app)
+Build:           EAS Build + custom Android scripts
+i18n:            English (en-US) + Filipino (fil-PH), default fil-PH
+
+No custom backend server. Architecture is mobile client + Firebase BaaS +
+Google Cloud APIs.
+
+================================================================================
+PROJECT STRUCTURE
+================================================================================
+
+aidey/
+├── src/
+│   ├── app/                    # Expo Router screens
+│   │   ├── _layout.tsx         # Root layout, providers, auth gate
+│   │   ├── index.tsx           # Home screen
+│   │   ├── sign-in.tsx
+│   │   ├── account.tsx
+│   │   ├── settings.tsx
+│   │   ├── language.tsx
+│   │   ├── ai-assistant.tsx
+│   │   ├── map-directions.tsx
+│   │   └── documents/
+│   │       ├── index.tsx       # Document catalog + search
+│   │       └── [id]/
+│   │           ├── index.tsx   # Ownership choice (wala/mayroon)
+│   │           ├── wala.tsx    # "I don't have this document"
+│   │           ├── mayroon.tsx # "I have this document" + uploads
+│   │           └── steps.tsx   # Step-by-step guide
+│   ├── components/             # UI components
+│   ├── constants/              # Documents, offices, maps, guides, colors
+│   ├── contexts/               # auth-context, locale-context
+│   ├── hooks/                  # Data + device hooks
+│   ├── i18n/                   # en-US + fil-PH translations
+│   ├── lib/firebase.ts         # Firebase initialization
+│   ├── services/               # Auth, chat, uploads, directions, location
+│   ├── types/aidey-response.ts  # Structured AI response shapes
+│   └── utils/                  # Maps, auth, fuzzy search, polyline, etc.
+├── assets/                     # Mascot images, expo icon
+├── website/                    # Static marketing site (Firebase Hosting)
+├── scripts/
+│   ├── run-android.sh
+│   ├── build-preview-apk.sh
+│   └── fix-foojay-gradle.mjs
+├── app.config.ts / app.json
+├── eas.json
+├── firebase.json
+├── database.rules.json
+├── storage.rules
+├── .firebaserc
+├── package.json
+└── pnpm-workspace.yaml
+
+================================================================================
+FEATURES
+================================================================================
+
+1. DOCUMENT & ID CATALOG
+   - 33 Philippine government documents across 5 categories
+   - Fuzzy search + speech-to-text dictation
+   - Categories: Primary IDs, Social Security/Welfare, Professional/Tax/
+     Employment, Clearances/Certifications, Civil Registry/Immigration
+
+2. STEP-BY-STEP GUIDES
+   - Prerequisites with cross-document dependency linking
+   - Numbered process steps with estimated timelines
+   - Progress saved locally and synced to cloud when signed in
+   - Sections: Requirements, Process Steps, Upload
+
+3. OWNERSHIP FLOW (per document)
+   - WALA ("I don't have it") → AI help or step-by-step guide
+   - MAYROON ("I have it") → capture/store ID photos
+
+4. DOCUMENT UPLOAD & WALLET
+   - Capture or pick photos of IDs
+   - Local-first caching with Firebase Storage cloud sync
+   - Multi-image per document, offline access
+
+5. AI VIRTUAL ASSISTANT
+   - Gemini-powered chat with structured JSON responses
+   - Suggested reply chips, task checklists, step messages
+   - Context-aware: knows guide progress, owned documents, locale
+   - Can suggest opening maps or saving documents
+
+6. OFFICE FINDER & DIRECTIONS
+   - GPS-based nearest issuing office lookup
+   - Turn-by-turn routing on interactive map
+   - Google Routes API + Places API
+
+7. BILINGUAL UI
+   - Full English and Filipino support across app, guides, and AI
+
+8. AUTH & CLOUD SYNC
+   - Email/password sign-in gates cloud features
+   - Syncs uploads, chat history, and guide progress across devices
+
+================================================================================
+DOCUMENT CATALOG (33 documents)
+================================================================================
+
+PRIMARY IDENTIFICATION & TRAVEL (6)
+  national-id              PhilID / National ID / ePhilID
+  philippine-passport      Philippine Passport
+  drivers-license          Driver's License
+  umid                     Unified Multi-Purpose ID (UMID)
+  postal-id                Postal ID
+  voters-id                Voter's ID / Voter's Certification
+
+SOCIAL SECURITY & WELFARE (8)
+  sss-id                   Social Security System (SSS) ID
+  gsis-e-card              GSIS e-Card
+  philhealth-id            PhilHealth ID
+  pag-ibig-id              Pag-IBIG Loyalty Card / ID
+  senior-citizen-id        Senior Citizen ID
+  pwd-id                   Persons with Disability (PWD) ID
+  solo-parent-id           Solo Parent ID
+  4ps-id                   Pantawid Pamilyang Pilipino Program (4Ps) ID
+
+PROFESSIONAL, TAX, & EMPLOYMENT (8)
+  prc-id                   Professional Regulation Commission (PRC) ID
+  ibp-id                   Integrated Bar of the Philippines (IBP) ID
+  tin-id                   Tax Identification Number (TIN) ID
+  seamans-book             Seaman's Book (SIRB) / MARINA ID
+  owwa-id                  OWWA ID / OFW e-Card
+  afp-military-id          AFP Beneficiary ID / Military ID
+  pvao-id                  PVAO ID
+  gocc-id                  Government Office / GOCC ID
+
+CLEARANCES & CERTIFICATIONS (5)
+  nbi-clearance            NBI Clearance
+  police-clearance         Police Clearance
+  barangay-id              Barangay ID / Barangay Clearance
+  cedula                   Community Tax Certificate (Cedula)
+  firearms-license         Firearms License
+
+CIVIL REGISTRY & IMMIGRATION (3)
+  psa-birth-certificate    PSA Birth Certificate
+  psa-marriage-death-certificate  PSA Marriage/Death Certificate
+  acr-icr                  Alien Certificate of Registration (ACR/ICR)
+
+================================================================================
+SCREEN ROUTES & NAVIGATION
+================================================================================
+
+Router: Expo Router file-based (src/app/), Stack navigator
+
+ROUTES:
+  /                        Home — documents + AI assistant entry
+  /sign-in                 Email/password authentication
+  /account                 Account management
+  /settings                Settings hub
+  /language                Language picker (en-US | fil-PH)
+  /ai-assistant            Gemini chat assistant
+  /map-directions          Turn-by-turn map view
+  /documents               Document catalog + fuzzy search
+  /documents/:id           Ownership choice (wala/mayroon)
+  /documents/:id/wala      "Don't have it" flow
+  /documents/:id/mayroon   "Have it" — upload/gallery
+  /documents/:id/steps     Step-by-step guide
+
+NAVIGATION FLOW:
+
+  /sign-in  ←── AuthGate (unauthenticated users)
+      ↓ (authenticated)
+  /  (Home)
+  ├── /documents
+  │   └── tap document card:
+  │       ├── has uploaded images → /documents/[id]/mayroon
+  │       └── no images → /documents/[id]
+  │           ├── "WALA" → /documents/[id]/wala
+  │           │   ├── "Magpatulong sa Aidey AI" → /ai-assistant
+  │           │   └── "Sundin ang hakbang-hakbang" → /documents/[id]/steps
+  │           └── "MAYROON" → /documents/[id]/mayroon
+  ├── /ai-assistant
+  │   ├── open_maps action → /map-directions
+  │   └── save_document action → /documents/[id]/mayroon
+  └── /settings → /account, /language
+
+ROOT LAYOUT PROVIDERS:
+  AuthProvider → KeyboardProvider → AuthGate → Stack + InternetErrorListener
+
+================================================================================
+ARCHITECTURE
+================================================================================
+
+┌─────────────────────────────────────────────────────────┐
+│              Expo React Native App (mobile)              │
+│  Expo Router │ Contexts │ Hooks │ Components │ i18n     │
+└────────────┬───────────────────────┬────────────────────┘
+             │                       │
+    ┌────────▼────────┐     ┌────────▼────────────┐
+    │  Firebase BaaS  │     │   Google Cloud APIs  │
+    │  Auth           │     │  Gemini (chat)       │
+    │  Realtime DB    │     │  Maps Routes/Places  │
+    │  Cloud Storage  │     └──────────────────────┘
+    └─────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│     Static marketing site (website/) on Firebase Hosting │
+│                    aidey.web.app                         │
+└─────────────────────────────────────────────────────────┘
+
+SERVICES (src/services/):
+  auth.ts                    Firebase email/password auth
+  chat.ts                    Gemini AI assistant
+  chat-sessions.ts           Chat history persistence (local + cloud)
+  document-uploads.ts        ID photo upload/sync
+  document-guide-progress.ts Per-document guide progress
+  directions.ts              Turn-by-turn routing (Google Routes API)
+  location.ts                User geolocation
+  office-finder.ts           Nearest government office lookup
+
+CONTEXTS:
+  auth-context.tsx           Firebase auth state, session expiry
+  locale-context.tsx         i18n locale (en-US | fil-PH)
+
+KEY HOOKS:
+  use-chat-sessions.ts       Chat session list + active session
+  use-document-uploads.ts    Document image map + sync state
+  use-document-guide-progress.ts  Per-document guide progress
+  use-live-user-location.ts  Real-time GPS
+  use-speech-to-text.ts      Voice input (default fil-PH)
+
+================================================================================
+FIREBASE CONFIGURATION
+================================================================================
+
+Project ID:        glak-hackathon
+Hosting site:      aidey → https://aidey.web.app
+RTDB instance:     glak-hackathon-default-rtdb
+RTDB URL:          https://glak-hackathon-default-rtdb.asia-southeast1.firebasedatabase.app
+Storage bucket:    glak-hackathon.firebasestorage.app
+Region:            asia-southeast1
+
+App identity:
+  slug:            aidey
+  scheme:          aidey
+  iOS bundle:      com.glak.aidey
+  Android package: com.glak.aidey
+  EAS projectId:   1ab3e097-ea29-4ba6-8097-4e447fbb7fe1
+
+RTDB PATHS (user-scoped, deny-by-default):
+  documentUploads/{uid}/{documentId}/{imageId}
+  chatSessions/{uid}/{sessionId}
+  documentGuideProgress/{uid}/{documentId}
+
+STORAGE PATHS:
+  documents/{uid}/{documentId}/{fileName}
+  Max 15 MB, image/* only, owner read/write/delete
+
+================================================================================
+ENVIRONMENT VARIABLES (.env.example)
+================================================================================
+
+EXPO_PUBLIC_GEMINI_API_KEY
+EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
+EXPO_PUBLIC_FIREBASE_API_KEY
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN
+EXPO_PUBLIC_FIREBASE_PROJECT_ID
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET
+EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+EXPO_PUBLIC_FIREBASE_APP_ID
+EXPO_PUBLIC_FIREBASE_DATABASE_URL
+
+Notes:
+- Google Maps key needs Maps SDK, Places API (New), Routes API enabled
+- All vars synced to EAS preview and production environments
+
+================================================================================
+KEY DOMAIN MODELS
+================================================================================
+
+Document
+  Government document/ID type. Defined in constants/documents.ts.
+  Localized guides in constants/document-guides/{en,fil}.ts.
+
+DocumentGuide
+  Step-by-step application guide with prerequisites, timeline, checklist.
+  Progress tracked per user per document.
+
+DocumentOwnership
+  Whether user has the document: mayroon (have) or wala (don't have).
+
+DocumentUpload / DocumentImageRecord
+  Captured ID photo. Status: uploaded | pending | uploading.
+  Local AsyncStorage + Firebase Storage + RTDB metadata.
+
+GovernmentOffice
+  Issuing agency location. Used by office-finder and map-directions.
+
+ChatSession / ChatMessage
+  AI assistant conversation. Synced via Realtime Database.
+  Includes checklist state and message history.
+
+AideyResponse
+  Structured Gemini output: suggested replies, task checklists, step messages.
+  Defined in types/aidey-response.ts.
+
+User
+  Firebase Auth email/password account. Gates cloud sync features.
+
+Locale
+  en-US | fil-PH. Affects UI, guides, AI responses, speech-to-text.
+
+DirectionsRoute
+  Map route from user location to office (polyline + distance/duration).
+
+================================================================================
+AI ASSISTANT (chat.ts)
+================================================================================
+
+Provider: Google Gemini via @google/genai
+Model fallback chain:
+  gemini-2.5-flash → gemini-2.5-flash-lite → gemini-3-flash → gemini-3.1-flash-lite
+
+Structured JSON responses via AIDEY_RESPONSE_JSON_SCHEMA.
+
+Context passed to AI:
+  - documentLabel (current document being discussed)
+  - ownedDocumentIds
+  - documentGuideProgress
+  - atOfficeProximity (within 25m of office)
+  - checklist state
+  - locale (en-US or fil-PH)
+
+Behavior rules:
+  - One step per reply
+  - 2-5 suggestion chips per response
+  - Map nearest office by default when relevant
+  - Task checklists for multi-step guidance
+  - save_document and open_maps action suggestions
+  - Bilingual responses matching user locale
+
+================================================================================
+DATA SYNC PATTERN
+================================================================================
+
+All user data follows local-first + cloud sync:
+
+1. Local storage: AsyncStorage with versioned keys per user (uid-scoped)
+2. Cloud: Firebase Realtime Database for metadata
+3. Files: Firebase Cloud Storage for images
+4. Sync triggers: NetInfo reconnect, AppState active, auth state change
+5. Merge strategy: compare updatedAt timestamps, push local-only to cloud
+6. On auth user change: reset all stores and re-hydrate from cloud
+
+Services using this pattern:
+  - chat-sessions.ts (key: chat-sessions-v1:{uid})
+  - document-uploads.ts (key: document-uploads-v2:{uid})
+  - document-guide-progress.ts (key: document-guide-progress-v1:{uid})
+
+================================================================================
+COMPONENTS
+================================================================================
+
+accordion-section.tsx        Collapsible guide sections
+aidey-wordmark.tsx           Brand wordmark
+assistant-step-message.tsx   AI step progress in chat bubbles
+auth-gate.tsx                Auth redirect wrapper
+chat-history-sidebar.tsx     Past chat sessions sidebar
+directions-map.tsx           Interactive map with route polyline
+document-detail-screen.tsx   WALA / MAYROON choice buttons
+document-mayroon-screen.tsx  Image gallery, camera/library upload
+document-steps-screen.tsx    Guide with dependency-aware checklists
+document-upload-panel.tsx    Inline upload in steps accordion
+document-wala-screen.tsx     AI help or steps CTAs
+id-upload-field.tsx          Document card with thumbnail
+internet-error-listener.tsx  Global network error detection
+internet-error-modal.tsx     Connectivity failure modal
+map-action-card.tsx          In-chat map/directions prompt
+screen-header.tsx            Consistent back-button header
+speech-to-text-button.tsx    Voice document search
+suggested-replies.tsx        Tappable AI suggestion chips
+task-checklist-card.tsx      Milestone checklist in AI chat
+task-completion-card.tsx     Celebration when checklist complete
+text.tsx                     Themed Text/TextInput with Nunito font
+
+================================================================================
+HOW TO RUN / BUILD
+================================================================================
+
+Prerequisites: Node.js, pnpm, Expo CLI, EAS CLI, Android SDK, Firebase CLI
+
+Development:
+  pnpm install
+  cp .env.example .env    # fill in API keys
+  pnpm start              # expo start --dev-client
+  pnpm start:go           # expo start (Expo Go)
+
+Android:
+  pnpm android            # scripts/run-android.sh
+  pnpm android:build      # EAS development APK
+  pnpm android:preview    # scripts/build-preview-apk.sh
+
+Prebuild:
+  pnpm prebuild           # expo prebuild --platform android
+  pnpm prebuild:clean     # with --clean flag
+
+Lint:
+  pnpm lint               # expo lint
+
+Firebase deploy:
+  firebase deploy --only hosting:aidey --project glak-hackathon
+  firebase deploy --only database,storage --project glak-hackathon
+
+EAS build profiles (eas.json):
+  development  — dev client APK, internal distribution
+  preview      — internal APK without dev client
+  production   — auto-increment version, production environment
+
+================================================================================
+PACKAGE.JSON SCRIPTS
+================================================================================
+
+postinstall     node scripts/fix-foojay-gradle.mjs
+start           expo start --dev-client
+start:go        expo start
+android         bash scripts/run-android.sh
+android:build   eas build --profile development --platform android
+android:preview bash scripts/build-preview-apk.sh
+prebuild        expo prebuild --platform android
+prebuild:clean  expo prebuild --platform android --clean
+lint            expo lint
+
+Main entry: expo-router/entry
+Version: 1.0.0
+
+Key dependencies:
+  expo ~56.0.12, react-native 0.85.3, react 19.2.3
+  expo-router ~56.2.11, firebase ^12.15.0
+  @google/genai ^2.10.0, react-native-maps 1.27.2
+  expo-speech-recognition, expo-location, expo-image-picker
+  @expo-google-fonts/fredoka, @expo-google-fonts/nunito
+
+================================================================================
+END OF REFERENCE
+================================================================================

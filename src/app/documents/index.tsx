@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ScreenHeader } from '@/components/screen-header';
@@ -12,13 +12,14 @@ import { useTranslation } from '@/contexts/locale-context';
 import { brand, colors } from '@/constants/colors';
 import { DOCUMENTS } from '@/constants/documents';
 import { fonts } from '@/constants/fonts';
-import { useDocumentUploads } from '@/hooks/use-document-uploads';
+import { useDocumentUploads, useDocumentUploadsSyncStatus } from '@/hooks/use-document-uploads';
 import { filterByFuzzyMatch } from '@/utils/fuzzy-match';
 
 export default function DocumentsScreen() {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const uploads = useDocumentUploads();
+  const { isLoading, isSyncing } = useDocumentUploadsSyncStatus();
 
   const filteredDocuments = useMemo(() => {
     const matched = filterByFuzzyMatch(DOCUMENTS, query, (document) => document.label);
@@ -61,11 +62,24 @@ export default function DocumentsScreen() {
         />
       </View>
 
+      {!isLoading && isSyncing ? (
+        <View style={styles.syncingBanner}>
+          <ActivityIndicator size="small" color={brand.navy} />
+          <Text style={styles.syncingText}>{t('documents.syncing')}</Text>
+        </View>
+      ) : null}
+
       <View style={styles.scrollShadowClip}>
         <View style={styles.scrollTopShadow} />
       </View>
 
       <View style={styles.scrollContainer}>
+        {isLoading ? (
+          <View style={styles.loadingState}>
+            <ActivityIndicator size="large" color={brand.navy} />
+            <Text style={styles.loadingText}>{t('documents.loading')}</Text>
+          </View>
+        ) : (
         <ScrollView
           style={styles.scrollArea}
           contentContainerStyle={styles.scrollContent}
@@ -95,6 +109,7 @@ export default function DocumentsScreen() {
             })
           )}
         </ScrollView>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -181,9 +196,33 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
   },
+  syncingBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingBottom: 8,
+  },
+  syncingText: {
+    fontSize: 13,
+    fontFamily: fonts.regular,
+    color: colors.secondary,
+  },
   scrollContainer: {
     flex: 1,
     marginHorizontal: -24,
+  },
+  loadingState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    paddingHorizontal: 24,
+  },
+  loadingText: {
+    fontSize: 15,
+    fontFamily: fonts.regular,
+    color: colors.secondary,
+    textAlign: 'center',
   },
   scrollArea: {
     flex: 1,

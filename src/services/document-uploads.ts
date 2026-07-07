@@ -40,12 +40,63 @@ let pendingRead: Promise<UploadMap> | null = null;
 let cachedUid: string | null | undefined;
 const listeners = new Set<() => void>();
 
+export type DocumentUploadsSyncState = {
+  /** True until the very first load (local or cloud) has resolved for the
+   * current user. Use this to show a full loading screen — there's nothing
+   * to display yet. */
+  isLoading: boolean;
+  /** True while reconciling with the cloud or downloading an image in the
+   * background. Local data is already available and displayed; this is for
+   * a lightweight "syncing" indicator, not a blocking screen. */
+  isSyncing: boolean;
+};
+
+let isInitialLoad = true;
+let activeSyncCount = 0;
+const syncStateListeners = new Set<() => void>();
+
+function notifySyncStateChange() {
+  syncStateListeners.forEach((listener) => listener());
+}
+
+function finishInitialLoad() {
+  if (!isInitialLoad) return;
+  isInitialLoad = false;
+  notifySyncStateChange();
+}
+
+/** Only flips `isSyncing` for work that actually requires the network —
+ * callers must check connectivity before calling this, so the indicator
+ * never shows while offline. */
+function beginBackgroundSync() {
+  activeSyncCount += 1;
+  notifySyncStateChange();
+}
+
+function endBackgroundSync() {
+  activeSyncCount = Math.max(0, activeSyncCount - 1);
+  notifySyncStateChange();
+}
+
+export function getDocumentUploadsSyncState(): DocumentUploadsSyncState {
+  return { isLoading: isInitialLoad, isSyncing: activeSyncCount > 0 };
+}
+
+export function subscribeToDocumentUploadsSyncState(listener: () => void) {
+  syncStateListeners.add(listener);
+  return () => {
+    syncStateListeners.delete(listener);
+  };
+}
+
 /** Clears in-memory upload state. Call when the signed-in user changes. */
 export function resetDocumentUploadsStore(): void {
   cache = null;
   pendingRead = null;
   cachedUid = undefined;
+  isInitialLoad = true;
   listeners.forEach((listener) => listener());
+  notifySyncStateChange();
 }
 
 function invalidateIfUserChanged(uid: string | null): void {
@@ -116,16 +167,23 @@ function getExtensionFromStoragePath(storagePath: string | undefined): string {
  * keeps working offline once each download finishes. Records display fine
  * in the meantime since their `localUri` already points at the remote URL. */
 async function downloadMissingLocalFiles(map: UploadMap): Promise<void> {
+  const pending = Object.entries(map).flatMap(([documentId, images]) =>
+    images
+      .filter((image) => image.remoteUrl && image.localUri === image.remoteUrl)
+      .map((image) => ({ documentId, image })),
+  );
+
+  if (pending.length === 0) return;
+
   const directory = getDocumentsDirectory();
+  beginBackgroundSync();
 
-  for (const [documentId, images] of Object.entries(map)) {
-    for (const image of images) {
-      if (!image.remoteUrl || image.localUri !== image.remoteUrl) continue;
-
+  try {
+    for (const { documentId, image } of pending) {
       try {
         const extension = getExtensionFromStoragePath(image.storagePath);
         const destination = new File(directory, `${documentId}-${image.id}${extension}`);
-        const downloaded = await File.downloadFileAsync(image.remoteUrl, destination, {
+        const downloaded = await File.downloadFileAsync(image.remoteUrl!, destination, {
           idempotent: true,
         });
 
@@ -141,6 +199,8 @@ async function downloadMissingLocalFiles(map: UploadMap): Promise<void> {
         console.warn(`Failed to download document image ${documentId}/${image.id}`, error);
       }
     }
+  } finally {
+    endBackgroundSync();
   }
 }
 
@@ -154,12 +214,15 @@ export async function syncDocumentUploadsWithCloud(): Promise<void> {
   const uid = auth?.currentUser?.uid;
   if (!database || !uid || isSyncingUploads) return;
 
+  // Checked before flipping `isSyncing`, so offline devices skip straight to
+  // local data without ever showing a syncing indicator.
+  const isOnline = await hasValidInternetConnection();
+  if (!isOnline) return;
+
   isSyncingUploads = true;
+  beginBackgroundSync();
 
   try {
-    const isOnline = await hasValidInternetConnection();
-    if (!isOnline) return;
-
     const [local, remote] = await Promise.all([readMap(), hydrateFromCloud()]);
 
     let changed = false;
@@ -216,6 +279,7 @@ export async function syncDocumentUploadsWithCloud(): Promise<void> {
     console.warn('Failed to sync document uploads with cloud', error);
   } finally {
     isSyncingUploads = false;
+    endBackgroundSync();
   }
 }
 
@@ -249,14 +313,19 @@ async function readMap(): Promise<UploadMap> {
 
       if (Object.keys(rawLocal).length > 0) {
         cache = rawLocal;
+        finishInitialLoad();
         // Local already has data, so this device won't otherwise notice
         // uploads added/removed on another device — reconcile quietly.
         void syncDocumentUploadsWithCloud();
         return rawLocal;
       }
 
+      // Offline with nothing local yet: don't wait on the network, just
+      // settle on an empty gallery. `syncDocumentUploadsWithCloud` will pick
+      // up any cloud data automatically once connectivity returns.
       const remote = await hydrateFromCloud();
       cache = remote;
+      finishInitialLoad();
 
       if (Object.keys(remote).length > 0) {
         await AsyncStorage.setItem(storageKey, JSON.stringify(remote));
@@ -489,14 +558,19 @@ export async function retryPendingDocumentUploads(): Promise<void> {
     return;
   }
 
+  const map = await readMap();
+  const pendingRecords = Object.values(map)
+    .flat()
+    .filter((record) => record.status !== 'uploaded');
+
+  if (pendingRecords.length === 0) {
+    return;
+  }
+
   isRetrying = true;
+  beginBackgroundSync();
 
   try {
-    const map = await readMap();
-    const pendingRecords = Object.values(map)
-      .flat()
-      .filter((record) => record.status !== 'uploaded');
-
     for (const record of pendingRecords) {
       const updated = await uploadRecordToFirebase(record);
       const latestMap = await readMap();
@@ -507,6 +581,7 @@ export async function retryPendingDocumentUploads(): Promise<void> {
     }
   } finally {
     isRetrying = false;
+    endBackgroundSync();
   }
 }
 

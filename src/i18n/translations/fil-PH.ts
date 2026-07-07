@@ -73,6 +73,8 @@ export const filPH: TranslationTree = {
     title: 'Mga Dokumento at ID',
     searchPlaceholder: 'I-type dito ang kailangan',
     empty: 'Walang nahanap na dokumento.',
+    loading: 'Ikinakarga ang iyong mga dokumento...',
+    syncing: 'Nagsi-sync...',
     speechToText: 'Speech to text',
     helpPrompt:
       'Wala pa akong {{label}}. Paano ako makakakuha nito at ano ang mga kinakailangan?',
@@ -127,6 +129,7 @@ export const filPH: TranslationTree = {
       uploadPhoto: 'I-upload ang {{title}}',
       uploadMore: 'Mag-upload pa ng larawan',
       libraryHint: 'Pindutin para pumili ng larawan',
+      downloading: 'Dina-download ang larawan mula sa iyong ibang device...',
     },
   },
   ai: {

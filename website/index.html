@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AIDEY — Ang Gabay sa Dokumento at ID. A journey-centered app that guides Filipinos through acquiring government documents and IDs.">
+  <title>AIDEY — Ang Gabay sa Dokumento at ID</title>
+  <link rel="icon" href="assets/LOGO.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="container nav-inner">
+      <a href="#" class="nav-brand">
+        <img src="assets/LOGO.png" alt="AIDEY logo" class="nav-logo">
+        <span class="wordmark"><span class="ai">AI</span><span class="de">DE</span><span class="y">Y</span></span>
+      </a>
+      <button class="nav-toggle" aria-label="Toggle menu" onclick="document.querySelector('.nav-links').classList.toggle('open')">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav-links">
+        <li><a href="#problem">Problem</a></li>
+        <li><a href="#solution">Solution</a></li>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#tech">Tech</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="container hero-grid">
+      <div class="hero-content">
+        <div class="hero-badge">
+          <img src="assets/readme/google.webp" alt="">
+          SparkFest 2026 · GDG PUP
+        </div>
+        <h1 class="wordmark"><span class="ai">AI</span><span class="de">DE</span><span class="y">Y</span></h1>
+        <p class="hero-tagline">
+          <em>Ang Gabay sa Dokumento at ID</em> — a journey-centered app that guides Filipinos from knowing what to prepare to finding the nearest government office on the map.
+        </p>
+        <div class="hero-actions">
+          <a href="https://github.com/lestersollano/AIDEY" class="btn btn-outline">View on GitHub</a>
+        </div>
+        <blockquote class="hero-quote">
+          "Because every opportunity begins with a document… and every document should begin with AIDEY."
+        </blockquote>
+      </div>
+      <div class="hero-visual">
+        <img src="assets/images/mascot/full-body/documents.png" alt="AIDEY mascot holding government documents" class="hero-mascot">
+      </div>
+    </div>
+  </header>
+
+  <section id="problem" class="problem">
+    <div class="container">
+      <span class="section-label">The Problem</span>
+      <h2 class="section-title">Getting a government ID shouldn't feel like a maze</h2>
+      <p class="section-desc">
+        Every year, millions of Filipinos apply for jobs, enroll in schools, open bank accounts, and access healthcare — and almost every opportunity begins with a government document or valid ID. Yet the process remains frustrating.
+      </p>
+      <div class="problem-grid">
+        <div class="problem-card">
+          <div class="icon">📋</div>
+          <h3>Scattered information</h3>
+          <p>Requirements are spread across dozens of agencies, outdated websites, and conflicting social media advice.</p>
+        </div>
+        <div class="problem-card">
+          <div class="icon">🔗</div>
+          <h3>Dependency chains</h3>
+          <p>You often need an ID to get an ID — leaving people stuck before they even start.</p>
+        </div>
+        <div class="problem-card">
+          <div class="icon">🚌</div>
+          <h3>Wasted trips</h3>
+          <p>People travel for hours only to be turned away with incomplete requirements.</p>
+        </div>
+        <div class="problem-card">
+          <div class="icon">🪪</div>
+          <h3>National ID gap</h3>
+          <p>Tens of millions still lack a National ID — not because of paperwork, but because knowing where to start is the hardest part.</p>
+        </div>
+      </div>
+      <div class="problem-quote">
+        <p>"Kulang po requirements." · "Balik na lang po kayo."</p>
+        <span>Sound familiar? This delays education, employment, financial access, and healthcare for everyday Filipinos.</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="solution" class="solution">
+    <div class="container solution-inner">
+      <div>
+        <span class="section-label">Our Solution</span>
+        <h2 class="section-title">Every document is a destination on a map</h2>
+        <p class="section-desc">
+          AIDEY is journey-centered, not information-centered. Instead of dumping data, it walks you through each stage — unlocking the next only when you're ready.
+        </p>
+        <div class="solution-steps">
+          <div class="step">
+            <span class="step-num">1</span>
+            <div>
+              <h3>Requirements</h3>
+              <p>Checklist-style prerequisites with dependency linking — see which IDs satisfy what you need.</p>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-num">2</span>
+            <div>
+              <h3>Process steps</h3>
+              <p>Numbered guides with estimated timelines. Progress saved as you go.</p>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-num">3</span>
+            <div>
+              <h3>Upload & store</h3>
+              <p>Capture your IDs, sync to the cloud when signed in, cache locally for offline access.</p>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-num">4</span>
+            <div>
+              <h3>Directions</h3>
+              <p>GPS-based lookup of the nearest issuing office with turn-by-turn routing on an interactive map.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <img src="assets/images/mascot/cropped/mgadokumentoatid.png" alt="AIDEY mascot — your guide to documents and IDs" class="solution-mascot">
+      </div>
+    </div>
+  </section>
+
+  <section id="features" class="features">
+    <div class="container">
+      <span class="section-label">Features</span>
+      <h2 class="section-title">Everything you need, in one friendly app</h2>
+      <p class="section-desc">
+        27+ Philippine government documents and IDs, a context-aware AI assistant, bilingual support, and a mascot to guide you every step of the way.
+      </p>
+      <div class="features-grid">
+        <div class="feature-card">
+          <img src="assets/images/mascot/cropped/mainmenu.png" alt="" class="feature-icon">
+          <h3>Document & ID catalog</h3>
+          <p>Browse and fuzzy-search 27 government documents across IDs, clearances, civil registry, and immigration.</p>
+        </div>
+        <div class="feature-card">
+          <img src="assets/readme/gemini.png" alt="" class="feature-icon">
+          <h3>AI virtual assistant</h3>
+          <p>Gemini-powered chat with suggested replies, task checklists, and awareness of your guide progress and owned documents.</p>
+        </div>
+        <div class="feature-card">
+          <img src="assets/readme/maps.svg" alt="" class="feature-icon">
+          <h3>Nearest office finder</h3>
+          <p>GPS lookup of the closest government agency with interactive maps and turn-by-turn routing via Google Maps.</p>
+        </div>
+        <div class="feature-card">
+          <img src="assets/images/mascot/full-body/idcorrect.png" alt="" class="feature-icon" style="object-fit: cover; border-radius: 12px;">
+          <h3>Document upload & storage</h3>
+          <p>Capture or pick photos of your IDs. Sync to Firebase Storage when signed in, with local caching offline.</p>
+        </div>
+        <div class="feature-card">
+          <img src="assets/images/mascot/mood/happy.png" alt="" class="feature-icon" style="object-fit: cover; border-radius: 12px;">
+          <h3>Bilingual UI</h3>
+          <p>Full English and Filipino (Tagalog) support across the app, guides, and AI responses.</p>
+        </div>
+        <div class="feature-card">
+          <img src="assets/images/mascot/cropped/magpatulongsaai.png" alt="" class="feature-icon">
+          <h3>Speech-to-text search</h3>
+          <p>Dictate document names instead of typing. Ask the AI for help anytime — "Magpatulong sa AI."</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tech" class="tech">
+    <div class="container">
+      <span class="section-label">Built With</span>
+      <h2 class="section-title">Powered by Google & Firebase</h2>
+      <div class="tech-header">
+        <img src="assets/readme/google.webp" alt="Google">
+        <span>Google APIs & SDKs · React Native · Expo SDK 56 · TypeScript</span>
+      </div>
+      <div class="tech-grid">
+        <div class="tech-card">
+          <img src="assets/readme/gemini.png" alt="Gemini API">
+          <h3>Gemini API</h3>
+          <p>AI assistant chat with structured replies, suggested chips, and task checklists.</p>
+        </div>
+        <div class="tech-card">
+          <img src="assets/readme/authentication.png" alt="Firebase Authentication">
+          <h3>Firebase Auth</h3>
+          <p>Email/password sign-in. Gates cloud sync for uploads, chat, and guide progress.</p>
+        </div>
+        <div class="tech-card">
+          <img src="assets/readme/storage.png" alt="Firebase Cloud Storage">
+          <h3>Cloud Storage</h3>
+          <p>Stores uploaded ID photos in the cloud with local-first offline caching.</p>
+        </div>
+        <div class="tech-card">
+          <img src="assets/readme/rtdb.png" alt="Firebase Realtime Database">
+          <h3>Realtime Database</h3>
+          <p>Syncs chat history, upload metadata, and guide progress across devices.</p>
+        </div>
+        <div class="tech-card">
+          <img src="assets/readme/hosting.png" alt="Firebase Hosting">
+          <h3>Firebase Hosting</h3>
+          <p>Hosts the web app at aidey.web.app.</p>
+        </div>
+        <div class="tech-card">
+          <img src="assets/readme/maps.svg" alt="Google Maps">
+          <h3>Google Maps Platform</h3>
+          <p>Routes API, Places API, and Maps SDK for office finder and turn-by-turn directions.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta">
+    <div class="container">
+      <h2>Ready to start your document journey?</h2>
+      <p>Arrive at government offices prepared — with every requirement checked and the nearest office on your map.</p>
+      <div class="cta-actions">
+        <a href="https://github.com/lestersollano/AIDEY" class="btn btn-outline">Star on GitHub</a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <img src="assets/LOGO.png" alt="AIDEY">
+        <span class="wordmark"><span class="ai">AI</span><span class="de">DE</span><span class="y">Y</span></span>
+      </div>
+      <ul class="footer-links">
+        <li><a href="https://github.com/lestersollano/AIDEY">GitHub</a></li>
+      </ul>
+      <p class="footer-credit">
+        Built by Team GLAK — Lester Matthew Sollano, Kristal Mae Tamayo, Angel Geoff Dare, Gabriel Josef Lacsa<br>
+        SparkFest 2026 · Google Developer Groups on Campus – Polytechnic University of the Philippines
+      </p>
+    </div>
+  </footer>
+
+</body>
+</html>
