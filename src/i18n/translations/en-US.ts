@@ -41,6 +41,8 @@ export const enUS: TranslationTree = {
     termsAcceptLink: 'Terms and Conditions',
     termsRequired: 'You must accept the Terms and Conditions to create an account.',
     signOut: 'Sign out',
+    signOutConfirmTitle: 'Sign out?',
+    signOutConfirmMessage: 'Are you sure you want to sign out of Aidey?',
     noName: 'No name',
     noEmail: 'No email',
     firebaseIncomplete:

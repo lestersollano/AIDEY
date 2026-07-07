@@ -4,6 +4,7 @@ import type { ComponentProps } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  ActivityIndicator,
   Dimensions,
   Modal,
   Pressable,
@@ -20,6 +21,8 @@ import { useTranslation } from '@/contexts/locale-context';
 import { brand, colors } from '@/constants/colors';
 import { fonts } from '@/constants/fonts';
 import { LOCALE_LABELS } from '@/i18n/types';
+import { signOut } from '@/services/auth';
+import { getAuthErrorMessage } from '@/utils/auth-errors';
 
 const SIDEBAR_WIDTH = Math.min(320, Dimensions.get('window').width * 0.82);
 
@@ -100,6 +103,9 @@ export function HomeMenuSidebar({ visible, onClose }: HomeMenuSidebarProps) {
   const { user } = useAuth();
   const { locale, t } = useTranslation();
   const [modalVisible, setModalVisible] = useState(false);
+  const [signOutError, setSignOutError] = useState<string | null>(null);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [signOutConfirmVisible, setSignOutConfirmVisible] = useState(false);
   const isShownRef = useRef(false);
   const translateX = useRef(new Animated.Value(-SIDEBAR_WIDTH)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
@@ -222,7 +228,24 @@ export function HomeMenuSidebar({ visible, onClose }: HomeMenuSidebarProps) {
     }
   }
 
+  async function handleSignOut() {
+    setSignOutError(null);
+    setIsSigningOut(true);
+
+    try {
+      handleClose();
+      setSignOutConfirmVisible(false);
+      await signOut();
+      router.replace('/sign-in');
+    } catch (error) {
+      setSignOutError(getAuthErrorMessage(error));
+    } finally {
+      setIsSigningOut(false);
+    }
+  }
+
   return (
+    <>
     <Modal
       visible={modalVisible}
       transparent
@@ -259,10 +282,68 @@ export function HomeMenuSidebar({ visible, onClose }: HomeMenuSidebarProps) {
             onOptionPress={handleOptionPress}
           />
             </ScrollView>
+
+            {user ? (
+              <View style={styles.footer}>
+                {signOutError ? <Text style={styles.signOutError}>{signOutError}</Text> : null}
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.signOutButton,
+                    pressed && styles.signOutButtonPressed,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('auth.signOut')}
+                  onPress={() => setSignOutConfirmVisible(true)}>
+                  <Text style={styles.signOutButtonText}>{t('auth.signOut')}</Text>
+                </Pressable>
+              </View>
+            ) : null}
           </SafeAreaView>
         </Animated.View>
       </View>
     </Modal>
+
+    <Modal
+      visible={signOutConfirmVisible}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setSignOutConfirmVisible(false)}>
+      <View style={styles.confirmBackdrop}>
+        <View style={styles.confirmCard}>
+          <Text style={styles.confirmTitle}>{t('auth.signOutConfirmTitle')}</Text>
+          <Text style={styles.confirmMessage}>{t('auth.signOutConfirmMessage')}</Text>
+          <View style={styles.confirmActions}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.confirmCancelButton,
+                pressed && styles.confirmButtonPressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={t('common.cancel')}
+              onPress={() => setSignOutConfirmVisible(false)}>
+              <Text style={styles.confirmCancelText}>{t('common.cancel')}</Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [
+                styles.confirmSignOutButton,
+                isSigningOut && styles.signOutButtonDisabled,
+                pressed && styles.confirmButtonPressed,
+              ]}
+              disabled={isSigningOut}
+              accessibilityRole="button"
+              accessibilityLabel={t('auth.signOut')}
+              onPress={handleSignOut}>
+              {isSigningOut ? (
+                <ActivityIndicator color={colors.primary} />
+              ) : (
+                <Text style={styles.confirmSignOutText}>{t('auth.signOut')}</Text>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
+    </>
   );
 }
 
@@ -367,5 +448,112 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: colors.secondaryBorder,
     marginHorizontal: 16,
+  },
+  footer: {
+    paddingTop: 12,
+    paddingBottom: 8,
+    gap: 8,
+  },
+  signOutError: {
+    fontSize: 13,
+    color: '#c0392b',
+    lineHeight: 18,
+    paddingHorizontal: 4,
+  },
+  signOutButton: {
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(192, 57, 43, 0.25)',
+    backgroundColor: 'rgba(192, 57, 43, 0.06)',
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 50,
+  },
+  signOutButtonText: {
+    fontSize: 15,
+    fontFamily: fonts.semiBold,
+    color: '#c0392b',
+  },
+  signOutButtonDisabled: {
+    opacity: 0.6,
+  },
+  signOutButtonPressed: {
+    opacity: 0.85,
+  },
+  confirmBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 22, 106, 0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  confirmCard: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: 20,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: colors.secondaryBorder,
+    shadowColor: brand.navy,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+  confirmTitle: {
+    fontFamily: fonts.semiBold,
+    fontSize: 18,
+    color: brand.navy,
+    textAlign: 'center',
+  },
+  confirmMessage: {
+    fontFamily: fonts.regular,
+    fontSize: 15,
+    color: colors.secondary,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  confirmActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 8,
+  },
+  confirmCancelButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.secondaryBorder,
+    backgroundColor: colors.primary,
+    minHeight: 48,
+  },
+  confirmSignOutButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: '#c0392b',
+    minHeight: 48,
+  },
+  confirmCancelText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 15,
+    color: brand.navy,
+  },
+  confirmSignOutText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 15,
+    color: colors.primary,
+  },
+  confirmButtonPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
   },
 });

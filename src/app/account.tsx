@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { useEffect } from 'react';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ScreenHeader } from '@/components/screen-header';
@@ -9,34 +9,16 @@ import { useAuth } from '@/contexts/auth-context';
 import { useTranslation } from '@/contexts/locale-context';
 import { brand, colors } from '@/constants/colors';
 import { fonts } from '@/constants/fonts';
-import { signOut } from '@/services/auth';
-import { getAuthErrorMessage } from '@/utils/auth-errors';
 
 export default function AccountScreen() {
   const { user, isLoading, isConfigured } = useAuth();
   const { t } = useTranslation();
-  const [error, setError] = useState<string | null>(null);
-  const [isSigningOut, setIsSigningOut] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !user) {
       router.replace('/sign-in');
     }
   }, [isLoading, user]);
-
-  async function handleSignOut() {
-    setError(null);
-    setIsSigningOut(true);
-
-    try {
-      await signOut();
-      router.replace('/sign-in');
-    } catch (signOutError) {
-      setError(getAuthErrorMessage(signOutError));
-    } finally {
-      setIsSigningOut(false);
-    }
-  }
 
   if (isLoading || !user) {
     return (
@@ -74,23 +56,6 @@ export default function AccountScreen() {
             </>
           ) : null}
         </View>
-
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.signOutButton,
-            isSigningOut && styles.buttonDisabled,
-            pressed && styles.buttonPressed,
-          ]}
-          disabled={isSigningOut}
-          onPress={handleSignOut}>
-          {isSigningOut ? (
-            <ActivityIndicator color="#c0392b" />
-          ) : (
-            <Text style={styles.signOutButtonText}>{t('auth.signOut')}</Text>
-          )}
-        </Pressable>
       </View>
     </SafeAreaView>
   );
@@ -159,31 +124,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     color: colors.secondary,
-  },
-  errorText: {
-    fontSize: 14,
-    color: '#c0392b',
-    lineHeight: 20,
-  },
-  signOutButton: {
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(192, 57, 43, 0.25)',
-    backgroundColor: 'rgba(192, 57, 43, 0.06)',
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 50,
-  },
-  signOutButtonText: {
-    fontSize: 15,
-    fontFamily: fonts.semiBold,
-    color: '#c0392b',
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonPressed: {
-    opacity: 0.85,
   },
 });

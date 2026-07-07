@@ -41,6 +41,8 @@ export const filPH: TranslationTree = {
     termsAcceptLink: 'Terms and Conditions',
     termsRequired: 'Kailangan mong tanggapin ang Terms and Conditions para makagawa ng account.',
     signOut: 'Mag-sign out',
+    signOutConfirmTitle: 'Mag-sign out?',
+    signOutConfirmMessage: 'Sigurado ka bang gusto mong mag-sign out sa Aidey?',
     noName: 'Walang pangalan',
     noEmail: 'Walang email',
     firebaseIncomplete:
