@@ -136,18 +136,7 @@ export default function HomeScreen() {
                         </View>
                     </Pressable>
                 </View>
-
-                <View style={styles.hero}>
-                    <AideyWordmark style={styles.greeting} />
-                    <Text style={styles.tagline}>{t("home.tagline")}</Text>
-                </View>
             </View>
-
-            <Image
-                source={require("@/assets/images/mascot/cropped/mainmenu.png")}
-                style={styles.bottomImage}
-                contentFit="contain"
-            />
         </SafeAreaView>
     );
 }
@@ -186,23 +175,6 @@ const styles = StyleSheet.create({
         flex: 1,
         fontSize: 20,
         textAlign: "center",
-    },
-    hero: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        paddingHorizontal: 16,
-        gap: 8,
-    },
-    greeting: {
-        fontSize: 28,
-        textAlign: "center",
-    },
-    tagline: {
-        fontSize: 15,
-        color: colors.secondary,
-        textAlign: "center",
-        lineHeight: 22,
     },
     buttons: {
         marginTop: 32,
@@ -272,9 +244,5 @@ const styles = StyleSheet.create({
         fontSize: 13,
         color: "rgba(1, 154, 143, 0.65)",
         fontFamily: fonts.regular,
-    },
-    bottomImage: {
-        width: "100%",
-        height: 220,
     },
 });

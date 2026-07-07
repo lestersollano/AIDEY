@@ -9,6 +9,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 import { AuthGate } from '@/components/auth-gate';
 import { InternetErrorListener } from '@/components/internet-error-listener';
+import { LocaleGate } from '@/components/locale-gate';
 import { AuthProvider } from '@/contexts/auth-context';
 import { LocaleProvider } from '@/contexts/locale-context';
 import { colors } from '@/constants/colors';
@@ -42,6 +43,7 @@ export default function RootLayout() {
 
   return (
     <LocaleProvider>
+      <LocaleGate>
       <AuthProvider>
         <KeyboardProvider>
         <View style={styles.root}>
@@ -56,6 +58,7 @@ export default function RootLayout() {
                 ...fadeScreenOptions,
                 contentStyle: { backgroundColor: colors.primary },
               }}>
+              <Stack.Screen name="choose-language" options={fadeScreenOptions} />
               <Stack.Screen name="index" options={fadeScreenOptions} />
               <Stack.Screen name="sign-in" options={fadeScreenOptions} />
               <Stack.Screen name="account" options={fadeScreenOptions} />
@@ -77,6 +80,7 @@ export default function RootLayout() {
         </View>
         </KeyboardProvider>
       </AuthProvider>
+      </LocaleGate>
     </LocaleProvider>
   );
 }

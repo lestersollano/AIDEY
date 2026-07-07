@@ -21,6 +21,7 @@ type LocaleContextValue = {
   setLocale: (locale: AppLocale) => void;
   t: (key: string, params?: TranslationParams) => string;
   isReady: boolean;
+  hasChosenLocale: boolean;
 };
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
@@ -33,6 +34,7 @@ export function getCachedLocale(): AppLocale {
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<AppLocale>(cachedLocale);
+  const [hasChosenLocale, setHasChosenLocale] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -44,6 +46,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
       if (stored === 'en-US' || stored === 'fil-PH') {
         cachedLocale = stored;
         setLocaleState(stored);
+        setHasChosenLocale(true);
       }
 
       setIsReady(true);
@@ -57,6 +60,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   const setLocale = useCallback((next: AppLocale) => {
     cachedLocale = next;
     setLocaleState(next);
+    setHasChosenLocale(true);
     syncSpeechLanguageWithAppLocale(next);
     void AsyncStorage.setItem(LOCALE_STORAGE_KEY, next);
   }, []);
@@ -72,8 +76,9 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
       setLocale,
       t,
       isReady,
+      hasChosenLocale,
     }),
-    [locale, setLocale, t, isReady],
+    [locale, setLocale, t, isReady, hasChosenLocale],
   );
 
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;

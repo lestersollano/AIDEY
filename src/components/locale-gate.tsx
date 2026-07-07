@@ -2,39 +2,26 @@ import { useRouter, useSegments } from 'expo-router';
 import { useEffect, type ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
-import { useAuth } from '@/contexts/auth-context';
+import { useLocale } from '@/contexts/locale-context';
 import { brand, colors } from '@/constants/colors';
 
-const PUBLIC_ROUTES = new Set([
-  'choose-language',
-  'sign-in',
-  'terms',
-  'privacy-policy',
-  'help',
-  'about',
-]);
-
-export function AuthGate({ children }: { children: ReactNode }) {
-  const { user, isLoading } = useAuth();
+export function LocaleGate({ children }: { children: ReactNode }) {
+  const { isReady, hasChosenLocale } = useLocale();
   const segments = useSegments();
   const router = useRouter();
+  const onChooseLanguage = segments[0] === 'choose-language';
 
   useEffect(() => {
-    if (isLoading) {
+    if (!isReady) {
       return;
     }
 
-    const currentRoute = segments[0] ?? '';
-    const isPublicRoute = PUBLIC_ROUTES.has(currentRoute);
-
-    if (!user && !isPublicRoute) {
-      router.replace('/sign-in');
-    } else if (user && currentRoute === 'sign-in') {
-      router.replace('/');
+    if (!hasChosenLocale && !onChooseLanguage) {
+      router.replace('/choose-language');
     }
-  }, [user, isLoading, segments, router]);
+  }, [isReady, hasChosenLocale, onChooseLanguage, router]);
 
-  if (isLoading) {
+  if (!isReady || (!hasChosenLocale && !onChooseLanguage)) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator color={brand.navy} size="large" />
