@@ -5,6 +5,14 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useAuth } from '@/contexts/auth-context';
 import { brand, colors } from '@/constants/colors';
 
+const PUBLIC_ROUTES = new Set([
+  'sign-in',
+  'terms',
+  'privacy-policy',
+  'help',
+  'about',
+]);
+
 export function AuthGate({ children }: { children: ReactNode }) {
   const { user, isLoading } = useAuth();
   const segments = useSegments();
@@ -15,11 +23,12 @@ export function AuthGate({ children }: { children: ReactNode }) {
       return;
     }
 
-    const onSignIn = segments[0] === 'sign-in';
+    const currentRoute = segments[0] ?? '';
+    const isPublicRoute = PUBLIC_ROUTES.has(currentRoute);
 
-    if (!user && !onSignIn) {
+    if (!user && !isPublicRoute) {
       router.replace('/sign-in');
-    } else if (user && onSignIn) {
+    } else if (user && currentRoute === 'sign-in') {
       router.replace('/');
     }
   }, [user, isLoading, segments, router]);

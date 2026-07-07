@@ -1,4 +1,5 @@
 import type { TranslationTree } from '@/i18n/types';
+import { legalFil } from '@/i18n/translations/legal-fil';
 
 export const filPH: TranslationTree = {
   common: {
@@ -36,6 +37,9 @@ export const filPH: TranslationTree = {
     signIn: 'Mag-sign in',
     noAccount: 'Wala pang account? Gumawa ng bago',
     hasAccount: 'May account na? Mag-sign in',
+    termsAcceptPrefix: 'Sumasang-ayon ako sa',
+    termsAcceptLink: 'Terms and Conditions',
+    termsRequired: 'Kailangan mong tanggapin ang Terms and Conditions para makagawa ng account.',
     signOut: 'Mag-sign out',
     noName: 'Walang pangalan',
     noEmail: 'Walang email',
@@ -63,6 +67,7 @@ export const filPH: TranslationTree = {
     language: 'Wika',
     help: 'Tulong',
     privacyPolicy: 'Privacy Policy',
+    termsAndConditions: 'Terms and Conditions',
     about: 'Tungkol sa Aidey',
   },
   language: {
@@ -227,4 +232,5 @@ export const filPH: TranslationTree = {
     aiUnavailableMessage:
       "AIDEY isn't available for now. Something went wrong, please try again later.",
   },
+  legal: legalFil,
 };

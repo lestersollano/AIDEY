@@ -1,5 +1,6 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -30,10 +31,21 @@ export default function SignInScreen() {
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const canSubmit =
+    isConfigured &&
+    !isSubmitting &&
+    (mode === 'sign-in' || acceptedTerms);
+
   async function handleEmailSubmit() {
+    if (mode === 'sign-up' && !acceptedTerms) {
+      setError(t('auth.termsRequired'));
+      return;
+    }
+
     setError(null);
     setIsSubmitting(true);
 
@@ -127,13 +139,43 @@ export default function SignInScreen() {
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
+          {mode === 'sign-up' ? (
+            <View style={styles.termsRow}>
+              <Pressable
+                style={styles.checkboxPressable}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: acceptedTerms }}
+                accessibilityLabel={t('auth.termsAcceptPrefix')}
+                onPress={() => setAcceptedTerms((current) => !current)}>
+                <View style={[styles.checkbox, acceptedTerms && styles.checkboxChecked]}>
+                  {acceptedTerms ? (
+                    <SymbolView
+                      name={{ ios: 'checkmark', android: 'check', web: 'check' }}
+                      size={14}
+                      tintColor={colors.primary}
+                    />
+                  ) : null}
+                </View>
+              </Pressable>
+              <Text style={styles.termsText}>
+                {t('auth.termsAcceptPrefix')}{' '}
+                <Text
+                  style={styles.termsLink}
+                  accessibilityRole="link"
+                  onPress={() => router.push('/terms')}>
+                  {t('auth.termsAcceptLink')}
+                </Text>
+              </Text>
+            </View>
+          ) : null}
+
           <Pressable
             style={({ pressed }) => [
               styles.primaryButton,
-              (!isConfigured || isSubmitting) && styles.buttonDisabled,
+              !canSubmit && styles.buttonDisabled,
               pressed && styles.buttonPressed,
             ]}
-            disabled={!isConfigured || isSubmitting}
+            disabled={!canSubmit}
             onPress={handleEmailSubmit}>
             {isSubmitting ? (
               <ActivityIndicator color={colors.primary} />
@@ -149,6 +191,7 @@ export default function SignInScreen() {
             disabled={isSubmitting}
             onPress={() => {
               setError(null);
+              setAcceptedTerms(false);
               setMode((current) => (current === 'sign-in' ? 'sign-up' : 'sign-in'));
             }}>
             <Text style={styles.switchModeText}>
@@ -236,6 +279,41 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#c0392b',
     lineHeight: 20,
+  },
+  termsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    paddingVertical: 4,
+  },
+  checkboxPressable: {
+    paddingTop: 1,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: colors.secondaryBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+    backgroundColor: colors.primary,
+  },
+  checkboxChecked: {
+    borderColor: brand.navy,
+    backgroundColor: brand.navy,
+  },
+  termsText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.secondary,
+  },
+  termsLink: {
+    fontFamily: fonts.semiBold,
+    color: brand.teal,
+    textDecorationLine: 'underline',
   },
   primaryButton: {
     marginTop: 8,

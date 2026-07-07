@@ -60,6 +60,10 @@ export default function RootLayout() {
               <Stack.Screen name="sign-in" options={fadeScreenOptions} />
               <Stack.Screen name="account" options={fadeScreenOptions} />
               <Stack.Screen name="language" options={fadeScreenOptions} />
+              <Stack.Screen name="help" options={fadeScreenOptions} />
+              <Stack.Screen name="privacy-policy" options={fadeScreenOptions} />
+              <Stack.Screen name="terms" options={fadeScreenOptions} />
+              <Stack.Screen name="about" options={fadeScreenOptions} />
               <Stack.Screen name="ai-assistant" options={fadeScreenOptions} />
               <Stack.Screen name="map-directions" options={fadeScreenOptions} />
               <Stack.Screen name="documents/index" options={fadeScreenOptions} />

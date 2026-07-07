@@ -1,4 +1,5 @@
 import type { TranslationTree } from '@/i18n/types';
+import { legalEn } from '@/i18n/translations/legal-en';
 
 export const enUS: TranslationTree = {
   common: {
@@ -36,6 +37,9 @@ export const enUS: TranslationTree = {
     signIn: 'Sign in',
     noAccount: "Don't have an account? Create one",
     hasAccount: 'Already have an account? Sign in',
+    termsAcceptPrefix: 'I agree to the',
+    termsAcceptLink: 'Terms and Conditions',
+    termsRequired: 'You must accept the Terms and Conditions to create an account.',
     signOut: 'Sign out',
     noName: 'No name',
     noEmail: 'No email',
@@ -63,6 +67,7 @@ export const enUS: TranslationTree = {
     language: 'Language',
     help: 'Help',
     privacyPolicy: 'Privacy Policy',
+    termsAndConditions: 'Terms and Conditions',
     about: 'About Aidey',
   },
   language: {
@@ -227,4 +232,5 @@ export const enUS: TranslationTree = {
     aiUnavailableMessage:
       "AIDEY isn't available right now. Something went wrong — please try again later.",
   },
+  legal: legalEn,
 };

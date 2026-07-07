@@ -135,6 +135,11 @@ export function HomeMenuSidebar({ visible, onClose }: HomeMenuSidebarProps) {
       icon: { ios: 'hand.raised', android: 'privacy_tip', web: 'privacy_tip' },
     },
     {
+      id: 'terms',
+      label: t('settings.termsAndConditions'),
+      icon: { ios: 'doc.text', android: 'description', web: 'description' },
+    },
+    {
       id: 'about',
       label: t('settings.about'),
       icon: { ios: 'info.circle', android: 'info', web: 'info' },
@@ -206,6 +211,14 @@ export function HomeMenuSidebar({ visible, onClose }: HomeMenuSidebarProps) {
       router.push('/account');
     } else if (option.id === 'language') {
       router.push('/language');
+    } else if (option.id === 'help') {
+      router.push('/help');
+    } else if (option.id === 'privacy') {
+      router.push('/privacy-policy');
+    } else if (option.id === 'terms') {
+      router.push('/terms');
+    } else if (option.id === 'about') {
+      router.push('/about');
     }
   }
 
@@ -235,12 +248,16 @@ export function HomeMenuSidebar({ visible, onClose }: HomeMenuSidebarProps) {
               style={styles.scrollArea}
               contentContainerStyle={styles.scrollContent}
               showsVerticalScrollIndicator={false}>
-              <SettingsSection
-                title={t('settings.general')}
-                options={generalOptionsWithAccount}
-                onOptionPress={handleOptionPress}
-              />
-              <SettingsSection title={t('settings.support')} options={supportOptions} />
+          <SettingsSection
+            title={t('settings.general')}
+            options={generalOptionsWithAccount}
+            onOptionPress={handleOptionPress}
+          />
+          <SettingsSection
+            title={t('settings.support')}
+            options={supportOptions}
+            onOptionPress={handleOptionPress}
+          />
             </ScrollView>
           </SafeAreaView>
         </Animated.View>
