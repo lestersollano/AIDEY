@@ -71,6 +71,7 @@ export const enUS: TranslationTree = {
     privacyPolicy: 'Privacy Policy',
     termsAndConditions: 'Terms and Conditions',
     about: 'About Aidey',
+    session: 'Session',
   },
   language: {
     title: 'Language',

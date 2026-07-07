@@ -6,6 +6,7 @@ import {
   Animated,
   ActivityIndicator,
   Dimensions,
+  Easing,
   Modal,
   Pressable,
   ScrollView,
@@ -28,6 +29,8 @@ const SIDEBAR_WIDTH = Math.min(320, Dimensions.get('window').width * 0.82);
 
 const OPEN_DURATION = 220;
 const CLOSE_DURATION = 200;
+const OPEN_EASING = Easing.out(Easing.cubic);
+const CLOSE_EASING = Easing.in(Easing.cubic);
 
 type SymbolViewName = ComponentProps<typeof SymbolView>['name'];
 type PlatformSymbolName = Extract<SymbolViewName, { ios?: unknown }>;
@@ -173,11 +176,13 @@ export function HomeMenuSidebar({ visible, onClose }: HomeMenuSidebarProps) {
         Animated.timing(translateX, {
           toValue: 0,
           duration: OPEN_DURATION,
+          easing: OPEN_EASING,
           useNativeDriver: true,
         }),
         Animated.timing(backdropOpacity, {
           toValue: 1,
           duration: OPEN_DURATION,
+          easing: OPEN_EASING,
           useNativeDriver: true,
         }),
       ]).start();
@@ -192,11 +197,13 @@ export function HomeMenuSidebar({ visible, onClose }: HomeMenuSidebarProps) {
       Animated.timing(translateX, {
         toValue: -SIDEBAR_WIDTH,
         duration: CLOSE_DURATION,
+        easing: CLOSE_EASING,
         useNativeDriver: true,
       }),
       Animated.timing(backdropOpacity, {
         toValue: 0,
         duration: CLOSE_DURATION,
+        easing: CLOSE_EASING,
         useNativeDriver: true,
       }),
     ]).start(({ finished }) => {
@@ -281,23 +288,44 @@ export function HomeMenuSidebar({ visible, onClose }: HomeMenuSidebarProps) {
             options={supportOptions}
             onOptionPress={handleOptionPress}
           />
-            </ScrollView>
-
-            {user ? (
-              <View style={styles.footer}>
-                {signOutError ? <Text style={styles.signOutError}>{signOutError}</Text> : null}
+          {user ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>{t('settings.session')}</Text>
+              {signOutError ? <Text style={styles.signOutError}>{signOutError}</Text> : null}
+              <View style={styles.sectionCard}>
                 <Pressable
-                  style={({ pressed }) => [
-                    styles.signOutButton,
-                    pressed && styles.signOutButtonPressed,
-                  ]}
+                  style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
                   accessibilityRole="button"
                   accessibilityLabel={t('auth.signOut')}
                   onPress={() => setSignOutConfirmVisible(true)}>
-                  <Text style={styles.signOutButtonText}>{t('auth.signOut')}</Text>
+                  <View style={[styles.rowIcon, styles.signOutRowIcon]}>
+                    <SymbolView
+                      name={{
+                        ios: 'rectangle.portrait.and.arrow.right',
+                        android: 'logout',
+                        web: 'logout',
+                      }}
+                      size={20}
+                      tintColor="#c0392b"
+                    />
+                  </View>
+                  <View style={styles.rowText}>
+                    <Text style={styles.signOutRowLabel}>{t('auth.signOut')}</Text>
+                  </View>
+                  <SymbolView
+                    name={{
+                      ios: 'chevron.right',
+                      android: 'chevron_right',
+                      web: 'chevron_right',
+                    }}
+                    size={16}
+                    tintColor="rgba(192, 57, 43, 0.45)"
+                  />
                 </Pressable>
               </View>
-            ) : null}
+            </View>
+          ) : null}
+            </ScrollView>
           </SafeAreaView>
         </Animated.View>
       </View>
@@ -449,37 +477,22 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondaryBorder,
     marginHorizontal: 16,
   },
-  footer: {
-    paddingTop: 12,
-    paddingBottom: 8,
-    gap: 8,
-  },
   signOutError: {
     fontSize: 13,
     color: '#c0392b',
     lineHeight: 18,
     paddingHorizontal: 4,
   },
-  signOutButton: {
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(192, 57, 43, 0.25)',
-    backgroundColor: 'rgba(192, 57, 43, 0.06)',
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 50,
+  signOutRowIcon: {
+    backgroundColor: 'rgba(192, 57, 43, 0.08)',
   },
-  signOutButtonText: {
+  signOutRowLabel: {
     fontSize: 15,
     fontFamily: fonts.semiBold,
     color: '#c0392b',
   },
   signOutButtonDisabled: {
     opacity: 0.6,
-  },
-  signOutButtonPressed: {
-    opacity: 0.85,
   },
   confirmBackdrop: {
     flex: 1,

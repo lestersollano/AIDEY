@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
+  Easing,
   FlatList,
   Modal,
   Pressable,
@@ -18,6 +19,11 @@ import { fonts } from '@/constants/fonts';
 import { isChecklistComplete, type ChatSessionSummary } from '@/services/chat-sessions';
 
 const SIDEBAR_WIDTH = Math.min(320, Dimensions.get('window').width * 0.82);
+
+const OPEN_DURATION = 220;
+const CLOSE_DURATION = 200;
+const OPEN_EASING = Easing.out(Easing.cubic);
+const CLOSE_EASING = Easing.in(Easing.cubic);
 
 type ListRow =
   | { type: 'session'; session: ChatSessionSummary }
@@ -74,12 +80,14 @@ export function ChatHistorySidebar({
       Animated.parallel([
         Animated.timing(translateX, {
           toValue: 0,
-          duration: 220,
+          duration: OPEN_DURATION,
+          easing: OPEN_EASING,
           useNativeDriver: true,
         }),
         Animated.timing(backdropOpacity, {
           toValue: 1,
-          duration: 220,
+          duration: OPEN_DURATION,
+          easing: OPEN_EASING,
           useNativeDriver: true,
         }),
       ]).start();
@@ -87,12 +95,14 @@ export function ChatHistorySidebar({
       Animated.parallel([
         Animated.timing(translateX, {
           toValue: SIDEBAR_WIDTH,
-          duration: 200,
+          duration: CLOSE_DURATION,
+          easing: CLOSE_EASING,
           useNativeDriver: true,
         }),
         Animated.timing(backdropOpacity, {
           toValue: 0,
-          duration: 200,
+          duration: CLOSE_DURATION,
+          easing: CLOSE_EASING,
           useNativeDriver: true,
         }),
       ]).start();

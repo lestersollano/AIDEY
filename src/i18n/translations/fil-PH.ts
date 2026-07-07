@@ -71,6 +71,7 @@ export const filPH: TranslationTree = {
     privacyPolicy: 'Privacy Policy',
     termsAndConditions: 'Terms and Conditions',
     about: 'Tungkol sa Aidey',
+    session: 'Sesyon',
   },
   language: {
     title: 'Wika',
