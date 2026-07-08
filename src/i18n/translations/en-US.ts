@@ -90,6 +90,7 @@ export const enUS: TranslationTree = {
         account: "My Account",
         notifications: "Notifications",
         language: "Language",
+        fontSize: "Text size",
         help: "Help",
         privacyPolicy: "Privacy Policy",
         termsAndConditions: "Terms and Conditions",
@@ -99,6 +100,21 @@ export const enUS: TranslationTree = {
     language: {
         title: "Language",
         subtitle: "Choose the language for the app",
+    },
+    fontSize: {
+        title: "Text size",
+        subtitle: "Adjust the text size across the app",
+        previewLabel: "Preview",
+        previewText:
+            "Aidey helps you prepare government documents and IDs with clear step-by-step guidance.",
+        increase: "Increase text size",
+        decrease: "Decrease text size",
+        level: {
+            small: "Small",
+            default: "Default",
+            large: "Large",
+            extraLarge: "Extra large",
+        },
     },
     documents: {
         title: "Documents",

@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AideyWordmark } from '@/components/aidey-wordmark';
 import { Text } from '@/components/text';
 import { useAuth } from '@/contexts/auth-context';
+import { useFontSize } from '@/contexts/font-size-context';
 import { useTranslation } from '@/contexts/locale-context';
 import { brand, colors } from '@/constants/colors';
 import { fonts } from '@/constants/fonts';
@@ -105,6 +106,7 @@ function SettingsSection({
 export function HomeMenuSidebar({ visible, onClose }: HomeMenuSidebarProps) {
   const { user } = useAuth();
   const { locale, t } = useTranslation();
+  const { fontSizeLevel } = useFontSize();
   const [modalVisible, setModalVisible] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -129,6 +131,12 @@ export function HomeMenuSidebar({ visible, onClose }: HomeMenuSidebarProps) {
       label: t('settings.language'),
       subtitle: LOCALE_LABELS[locale],
       icon: { ios: 'globe', android: 'language', web: 'language' },
+    },
+    {
+      id: 'font-size',
+      label: t('settings.fontSize'),
+      subtitle: t(`fontSize.level.${fontSizeLevel}`),
+      icon: { ios: 'textformat.size', android: 'format_size', web: 'format_size' },
     },
   ];
 
@@ -224,6 +232,8 @@ export function HomeMenuSidebar({ visible, onClose }: HomeMenuSidebarProps) {
       router.push('/account');
     } else if (option.id === 'language') {
       router.push('/language');
+    } else if (option.id === 'font-size') {
+      router.push('/font-size');
     } else if (option.id === 'help') {
       router.push('/help');
     } else if (option.id === 'privacy') {

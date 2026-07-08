@@ -11,6 +11,7 @@ import { AuthGate } from '@/components/auth-gate';
 import { InternetErrorListener } from '@/components/internet-error-listener';
 import { LocaleGate } from '@/components/locale-gate';
 import { AuthProvider } from '@/contexts/auth-context';
+import { FontSizeProvider } from '@/contexts/font-size-context';
 import { LocaleProvider } from '@/contexts/locale-context';
 import { colors } from '@/constants/colors';
 
@@ -45,6 +46,7 @@ export default function RootLayout() {
   return (
     <LocaleProvider>
       <LocaleGate>
+      <FontSizeProvider>
       <AuthProvider>
         <KeyboardProvider>
         <View style={styles.root}>
@@ -64,6 +66,7 @@ export default function RootLayout() {
               <Stack.Screen name="sign-in" options={fadeScreenOptions} />
               <Stack.Screen name="account" options={fadeScreenOptions} />
               <Stack.Screen name="language" options={fadeScreenOptions} />
+              <Stack.Screen name="font-size" options={fadeScreenOptions} />
               <Stack.Screen name="help" options={fadeScreenOptions} />
               <Stack.Screen name="privacy-policy" options={fadeScreenOptions} />
               <Stack.Screen name="terms" options={fadeScreenOptions} />
@@ -82,6 +85,7 @@ export default function RootLayout() {
         </View>
         </KeyboardProvider>
       </AuthProvider>
+      </FontSizeProvider>
       </LocaleGate>
     </LocaleProvider>
   );

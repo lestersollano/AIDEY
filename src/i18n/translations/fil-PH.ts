@@ -93,6 +93,7 @@ export const filPH: TranslationTree = {
         account: "Aking Account",
         notifications: "Mga Abiso",
         language: "Wika",
+        fontSize: "Laki ng text",
         help: "Tulong",
         privacyPolicy: "Privacy Policy",
         termsAndConditions: "Terms and Conditions",
@@ -102,6 +103,21 @@ export const filPH: TranslationTree = {
     language: {
         title: "Wika",
         subtitle: "Piliin ang wika ng app",
+    },
+    fontSize: {
+        title: "Laki ng text",
+        subtitle: "Ayusin ang laki ng text sa buong app",
+        previewLabel: "Preview",
+        previewText:
+            "Tinutulungan ka ni Aidey na ihanda ang mga dokumento at ID ng gobyerno gamit ang malinaw na hakbang-hakbang na gabay.",
+        increase: "Palakihin ang text",
+        decrease: "Paliitin ang text",
+        level: {
+            small: "Maliit",
+            default: "Karaniwan",
+            large: "Malaki",
+            extraLarge: "Napakalaki",
+        },
     },
     documents: {
         title: "Mga Dokumento",
