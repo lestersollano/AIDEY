@@ -1,18 +1,22 @@
+import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
+import { IdCard } from "lucide-react-native";
 import { useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import {
     SafeAreaView,
     useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
 import { AideyWordmark } from "@/components/aidey-wordmark";
+import { Dropdown } from "@/components/dropdown";
 import { HomeMenuSidebar } from "@/components/home-menu-sidebar";
 import { Text } from "@/components/text";
 import { brand, colors } from "@/constants/colors";
 import { fonts } from "@/constants/fonts";
+import { useAuth } from "@/contexts/auth-context";
 import { useTranslation } from "@/contexts/locale-context";
 
 function pressableStyle(baseStyle: object, pressedStyle: object) {
@@ -24,8 +28,11 @@ function pressableStyle(baseStyle: object, pressedStyle: object) {
 
 export default function HomeScreen() {
     const { t } = useTranslation();
+    const { user } = useAuth();
     const [menuVisible, setMenuVisible] = useState(false);
+    const [dropdownValue, setDropdownValue] = useState<string | null>(null);
     const insets = useSafeAreaInsets();
+    const greetingName = user?.displayName?.trim().split(/\s+/)[0] ?? t("auth.noName");
 
     return (
         <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
@@ -58,88 +65,143 @@ export default function HomeScreen() {
                     <View style={styles.headerSpacer} />
                 </View>
 
-                <View style={styles.buttons}>
-                    <Pressable
-                        style={pressableStyle(
-                            styles.button,
-                            styles.buttonPressed,
-                        )}
-                        android_ripple={{ color: "rgba(0, 22, 106, 0.12)" }}
-                        onPress={() => router.push("/documents")}
+                <View style={styles.greeting}>
+                    <LinearGradient
+                        colors={[brand.navy, brand.blue, brand.teal]}
+                        locations={[0, 0.55, 1]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.greetingGradient}
                     >
-                        <View style={styles.buttonRow}>
-                            <View
-                                style={[
-                                    styles.buttonMedia,
-                                    styles.buttonMediaDocuments,
-                                ]}
-                            >
-                                <Image
-                                    source={require("@/assets/images/mascot/cropped/mgadokumentoatid.png")}
-                                    style={styles.buttonIcon}
-                                    contentFit="contain"
-                                />
+                        <View style={styles.greetingHeader}>
+                            <View style={styles.greetingTextRow}>
+                                <View style={styles.greetingIcon}>
+                                    <IdCard
+                                        size={26}
+                                        color={colors.primary}
+                                        strokeWidth={2}
+                                    />
+                                </View>
+                                <View style={styles.greetingCopy}>
+                                    <Text style={styles.greetingText}>
+                                        {t("home.greeting", {
+                                            name: greetingName,
+                                        })}
+                                    </Text>
+                                    <Text style={styles.greetingEmail}>
+                                        {user?.email || t("auth.noEmail")}
+                                    </Text>
+                                </View>
                             </View>
-                            <View style={styles.buttonTextWrapper}>
-                                <Text style={styles.buttonText}>
-                                    {t("home.documentsTitle")}
-                                </Text>
-                                <Text style={styles.buttonSubtext}>
-                                    {t("home.documentsSubtitle")}
-                                </Text>
-                            </View>
-                            <SymbolView
-                                name={{
-                                    ios: "chevron.right",
-                                    android: "chevron_right",
-                                    web: "chevron_right",
-                                }}
-                                size={18}
-                                tintColor={brand.navy}
-                            />
                         </View>
-                    </Pressable>
+                    </LinearGradient>
 
-                    <Pressable
-                        style={pressableStyle(
-                            styles.button,
-                            styles.buttonPressed,
-                        )}
-                        android_ripple={{ color: "rgba(0, 22, 106, 0.12)" }}
-                        onPress={() => router.push("/ids")}
+                    <ScrollView
+                        style={styles.section}
+                        contentContainerStyle={styles.sectionContent}
+                        showsVerticalScrollIndicator={false}
                     >
-                        <View style={styles.buttonRow}>
-                            <View
-                                style={[
-                                    styles.buttonMedia,
-                                    styles.buttonMediaIds,
-                                ]}
-                            >
-                                <Image
-                                    source={require("@/assets/images/mascot/cropped/mgadokumentoatid.png")}
-                                    style={styles.buttonIcon}
-                                    contentFit="contain"
-                                />
-                            </View>
-                            <View style={styles.buttonTextWrapper}>
-                                <Text style={styles.buttonText}>
-                                    {t("home.idsTitle")}
-                                </Text>
-                                <Text style={styles.buttonSubtext}>
-                                    {t("home.idsSubtitle")}
-                                </Text>
-                            </View>
-                            <SymbolView
-                                name={{
-                                    ios: "chevron.right",
-                                    android: "chevron_right",
-                                    web: "chevron_right",
+                        <View style={styles.buttons}>
+                            <Pressable
+                                style={pressableStyle(
+                                    styles.button,
+                                    styles.buttonPressed,
+                                )}
+                                android_ripple={{
+                                    color: "rgba(0, 22, 106, 0.12)",
                                 }}
-                                size={18}
-                                tintColor={brand.navy}
-                            />
+                                onPress={() => router.push("/documents")}
+                            >
+                                <View style={styles.buttonRow}>
+                                    <View
+                                        style={[
+                                            styles.buttonMedia,
+                                            styles.buttonMediaDocuments,
+                                        ]}
+                                    >
+                                        <Image
+                                            source={require("@/assets/images/mascot/cropped/mgadokumentoatid.png")}
+                                            style={styles.buttonIcon}
+                                            contentFit="contain"
+                                        />
+                                    </View>
+                                    <View style={styles.buttonTextWrapper}>
+                                        <Text style={styles.buttonText}>
+                                            {t("home.documentsTitle")}
+                                        </Text>
+                                        <Text style={styles.buttonSubtext}>
+                                            {t("home.documentsSubtitle")}
+                                        </Text>
+                                    </View>
+                                    <SymbolView
+                                        name={{
+                                            ios: "chevron.right",
+                                            android: "chevron_right",
+                                            web: "chevron_right",
+                                        }}
+                                        size={18}
+                                        tintColor={brand.blue}
+                                    />
+                                </View>
+                            </Pressable>
+
+                            <Pressable
+                                style={pressableStyle(
+                                    styles.button,
+                                    styles.buttonPressed,
+                                )}
+                                android_ripple={{
+                                    color: "rgba(0, 22, 106, 0.12)",
+                                }}
+                                onPress={() => router.push("/ids")}
+                            >
+                                <View style={styles.buttonRow}>
+                                    <View
+                                        style={[
+                                            styles.buttonMedia,
+                                            styles.buttonMediaIds,
+                                        ]}
+                                    >
+                                        <Image
+                                            source={require("@/assets/images/mascot/cropped/mgadokumentoatid.png")}
+                                            style={styles.buttonIcon}
+                                            contentFit="contain"
+                                        />
+                                    </View>
+                                    <View style={styles.buttonTextWrapper}>
+                                        <Text style={styles.buttonText}>
+                                            {t("home.idsTitle")}
+                                        </Text>
+                                        <Text style={styles.buttonSubtext}>
+                                            {t("home.idsSubtitle")}
+                                        </Text>
+                                    </View>
+                                    <SymbolView
+                                        name={{
+                                            ios: "chevron.right",
+                                            android: "chevron_right",
+                                            web: "chevron_right",
+                                        }}
+                                        size={18}
+                                        tintColor={brand.teal}
+                                    />
+                                </View>
+                            </Pressable>
                         </View>
-                    </Pressable>
+
+                        <View style={styles.divider} />
+
+                        <Dropdown
+                            style={styles.dropdown}
+                            options={[]}
+                            value={dropdownValue}
+                            onChange={setDropdownValue}
+                            placeholder={t("home.dropdownPlaceholder")}
+                            accessibilityLabel={t("home.dropdownLabel")}
+                        />
+
+                        <View style={styles.card} />
+                    </ScrollView>
                 </View>
             </View>
 
@@ -166,7 +228,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: colors.primary,
+        backgroundColor: "rgba(0, 22, 106, 0.03)",
     },
     content: {
         flex: 1,
@@ -176,7 +238,8 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        marginTop: 16,
+        marginTop: 8,
+        marginBottom: 4,
     },
     headerButton: {
         width: 40,
@@ -184,9 +247,12 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
         borderRadius: 999,
+        borderWidth: 1,
+        borderColor: colors.secondaryBorder,
+        backgroundColor: colors.primary,
     },
     headerButtonPressed: {
-        opacity: 0.5,
+        opacity: 0.7,
         backgroundColor: colors.secondaryMuted,
     },
     headerSpacer: {
@@ -198,54 +264,140 @@ const styles = StyleSheet.create({
         fontSize: 20,
         textAlign: "center",
     },
-    buttons: {
-        marginTop: 32,
-        gap: 14,
+    greeting: {
+        marginTop: 8,
+        marginHorizontal: -24,
         alignSelf: "stretch",
+        flex: 1,
+        borderTopLeftRadius: 28,
+        borderTopRightRadius: 28,
+        backgroundColor: colors.primary,
+        overflow: "hidden",
+        shadowColor: brand.navy,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.12,
+        shadowRadius: 16,
+        elevation: 6,
+    },
+    greetingGradient: {
+        width: "100%",
+        paddingTop: 28,
+        paddingBottom: 36,
+    },
+    greetingHeader: {
+        paddingHorizontal: 24,
+    },
+    greetingTextRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 14,
+        marginBottom: 16,
+    },
+    greetingIcon: {
+        width: 48,
+        height: 48,
+        borderRadius: 14,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "rgba(255, 255, 255, 0.18)",
+    },
+    greetingCopy: {
+        flex: 1,
+        gap: 2,
+    },
+    greetingText: {
+        fontSize: 28,
+        lineHeight: 34,
+        fontFamily: fonts.fredoka,
+        color: colors.primary,
+    },
+    greetingEmail: {
+        marginTop: 6,
+        fontSize: 12,
+        fontFamily: fonts.regular,
+        color: "rgba(255, 255, 255, 0.78)",
+        letterSpacing: 0.2,
+    },
+    section: {
+        flex: 1,
+        alignSelf: "stretch",
+        marginTop: -24,
+        borderTopLeftRadius: 28,
+        borderTopRightRadius: 28,
+        backgroundColor: colors.primary,
+        overflow: "hidden",
+    },
+    sectionContent: {
+        paddingTop: 32,
+        paddingHorizontal: 24,
+        paddingBottom: 112,
+    },
+    buttons: {
+        gap: 12,
+        marginTop: 8,
+    },
+    divider: {
+        marginTop: 28,
+        marginBottom: 4,
+        height: 1,
+        width: "100%",
+        backgroundColor: colors.secondaryBorder,
+    },
+    dropdown: {
+        marginTop: 20,
+    },
+    card: {
+        marginTop: 20,
+        width: "100%",
+        aspectRatio: 1.6,
+        borderRadius: 20,
+        backgroundColor: colors.secondaryMuted,
+        borderWidth: 1,
+        borderColor: colors.secondaryBorder,
     },
     button: {
         width: "100%",
-        paddingVertical: 14,
+        paddingVertical: 16,
         paddingHorizontal: 16,
-        borderRadius: 16,
+        borderRadius: 18,
         backgroundColor: colors.primary,
         borderWidth: 1,
         borderColor: colors.secondaryBorder,
         shadowColor: brand.navy,
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-        elevation: 3,
+        shadowOpacity: 0.05,
+        shadowRadius: 6,
+        elevation: 2,
     },
     buttonPressed: {
-        opacity: 0.85,
-        transform: [{ scale: 0.98 }],
+        opacity: 0.88,
+        transform: [{ scale: 0.99 }],
     },
     buttonRow: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 12,
+        gap: 14,
         width: "100%",
     },
     buttonMedia: {
-        width: 64,
-        height: 64,
-        borderRadius: 14,
+        width: 60,
+        height: 60,
+        borderRadius: 16,
         overflow: "hidden",
     },
     buttonMediaDocuments: {
-        backgroundColor: "rgba(0, 22, 106, 0.06)",
+        backgroundColor: "rgba(0, 90, 222, 0.1)",
     },
     buttonMediaIds: {
-        backgroundColor: "rgba(0, 22, 106, 0.06)",
+        backgroundColor: "rgba(1, 154, 143, 0.1)",
     },
     buttonIcon: {
-        width: 64,
-        height: 64,
+        width: 60,
+        height: 60,
     },
     buttonTextWrapper: {
         flex: 1,
-        gap: 2,
+        gap: 3,
     },
     buttonText: {
         color: brand.navy,
@@ -254,6 +406,7 @@ const styles = StyleSheet.create({
     },
     buttonSubtext: {
         fontSize: 13,
+        lineHeight: 18,
         color: "rgba(0, 22, 106, 0.55)",
         fontFamily: fonts.regular,
     },
@@ -267,16 +420,16 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
         overflow: "hidden",
-        borderWidth: 1,
-        borderColor: colors.secondaryBorder,
-        shadowColor: brand.navy,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 6,
+        borderWidth: 2,
+        borderColor: "rgba(1, 154, 143, 0.25)",
+        shadowColor: brand.teal,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.28,
+        shadowRadius: 12,
+        elevation: 8,
     },
     aiFabPressed: {
-        opacity: 0.9,
+        opacity: 0.92,
         transform: [{ scale: 0.96 }],
     },
     aiFabImage: {

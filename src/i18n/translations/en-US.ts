@@ -26,6 +26,9 @@ export const enUS: TranslationTree = {
         aiSubtitle: "Ask questions and get help",
         tagline:
             "I'm Aidey, your guide for documents and IDs! Choose what you need from the options above.",
+        dropdownLabel: "Menu",
+        dropdownPlaceholder: "Select",
+        greeting: "Hello, {{name}}",
     },
     auth: {
         signInTagline: "Sign in to continue with Aidey.",

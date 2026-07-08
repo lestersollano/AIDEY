@@ -26,6 +26,9 @@ export const filPH: TranslationTree = {
         aiSubtitle: "Magtanong at humingi ng tulong",
         tagline:
             "Ako si Aidey, ang iyong Gabay sa Dokumento at ID! Piliin ang kailangan mo sa mga opsyon sa itaas.",
+        dropdownLabel: "Menu",
+        dropdownPlaceholder: "Pumili",
+        greeting: "Kumusta, {{name}}",
     },
     auth: {
         signInTagline: "Mag-sign in para magpatuloy sa Aidey.",
