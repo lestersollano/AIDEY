@@ -30,16 +30,22 @@ export const legalEn: TranslationTree = {
       'Aidey is a mobile application that helps users navigate Philippine government document and ID requirements. For purposes of the Data Privacy Act, GLAK (the developer of Aidey) acts as a Personal Information Controller (PIC) with respect to personal data processed through this app.',
     dataCollectedTitle: 'Personal data we collect',
     dataCollectedBody:
-      'Depending on how you use Aidey, we may process: account information (name, email address, authentication credentials); uploaded document and ID images; AI chat messages and session history; document guide progress; device location when you request nearby office directions; microphone audio when you use speech-to-text; and technical data such as device type and app usage needed to operate and secure the service.',
+      'Depending on how you use Aidey, we may process: account information (name, email address, authentication credentials); uploaded document and ID images; AI chat messages and session history; optional photos of documents or IDs you send in the AI assistant; relevant app context sent with AI requests (such as document guide progress, documents you have saved, and location when you request nearby offices or share your location); document guide progress; device location when you request nearby office directions; microphone audio when you use speech-to-text; and technical data such as device type and app usage needed to operate and secure the service.',
     purposesTitle: 'How we use your data',
     purposesBody:
       'We use personal data to create and manage your account; store and sync your documents and chat history; provide AI-assisted guidance; show map directions to government offices; improve app reliability and security; respond to your requests; and comply with applicable law. We do not sell your personal data.',
     legalBasisTitle: 'Legal basis for processing',
     legalBasisBody:
-      'We process personal data based on your consent, as required or permitted under Section 12 of the Data Privacy Act of 2012, and when necessary to perform the service you requested, to comply with legal obligations, to protect vitally important interests, or for legitimate interests such as securing the app. Sensitive personal information, including ID images, is processed only with your explicit consent or another lawful ground under the Act.',
+      'We process personal data based on your consent, as required or permitted under Section 12 of the Data Privacy Act of 2012, and when necessary to perform the service you requested, to comply with legal obligations, to protect vitally important interests, or for legitimate interests such as securing the app. Sensitive personal information, including government ID images stored in the app or sent to the AI assistant, is processed only with your explicit consent given at sign-up and when you choose to upload or send such images, or under another lawful ground under the Act.',
     sharingTitle: 'Sharing and processors',
     sharingBody:
-      'We use trusted service providers to operate Aidey, including Firebase (authentication, database, and file storage) and Google Maps (location and routing). These providers act as Personal Information Processors (PIPs) and are contractually required to implement appropriate security measures consistent with NPC Circular No. 16-01. We may also disclose data when required by law, court order, or a lawful government request.',
+      'We use trusted service providers to operate Aidey, including Firebase (authentication, database, and file storage), Google Gemini (AI assistant processing), and Google Maps (location and routing). These providers act as Personal Information Processors (PIPs) and are contractually required to implement appropriate security measures consistent with NPC Circular No. 16-01. We may also disclose data when required by law, court order, or a lawful government request.',
+    aiProcessingTitle: 'AI processing (Google Gemini)',
+    aiProcessingBody:
+      'Aidey uses Google Gemini, a generative AI service operated by Google LLC, to power the AI assistant. When you use the assistant, we may send your chat messages, conversation history, optional images you attach (which may include government IDs or other sensitive personal information), and relevant app context (such as document guide progress, documents you have saved, and location information when you request nearby offices or share your location) to Google for processing. Google acts as a Personal Information Processor on our behalf. AI responses are generated automatically and may be inaccurate — always verify with the relevant government office.',
+    crossBorderTitle: 'International data transfers',
+    crossBorderBody:
+      'Your personal data may be stored and processed in the Philippines and in other countries where our service providers operate, including the United States and other jurisdictions where Google and Firebase infrastructure is located. Where required under Section 19 of the Data Privacy Act of 2012 and applicable NPC issuances, we rely on your informed consent, contractual safeguards with our processors, and compliance with applicable data protection standards.',
     retentionTitle: 'Data retention',
     retentionBody:
       'We keep personal data only for as long as needed to provide the service, comply with legal obligations, resolve disputes, and enforce our agreements. You may delete uploaded documents in the app. Account deletion requests may be sent to lestermatthewsollano@gmail.com.',
@@ -112,7 +118,7 @@ export const legalEn: TranslationTree = {
       'Our handling of personal data is governed by the Privacy Policy and the Data Privacy Act of 2012 (Republic Act No. 10173). By using Aidey, you also acknowledge that electronic records and transactions in the app may be recognized under the Electronic Commerce Act of 2000 (Republic Act No. 8792), where applicable.',
     thirdPartyTitle: 'Third-party services',
     thirdPartyBody:
-      'Aidey relies on third-party providers such as Firebase and Google Maps. Your use of those features may also be subject to their respective terms. We are not responsible for third-party services outside our reasonable control.',
+      'Aidey relies on third-party providers such as Firebase, Google Gemini, and Google Maps. Your use of those features may also be subject to their respective terms. We are not responsible for third-party services outside our reasonable control.',
     suspensionTitle: 'Suspension and termination',
     suspensionBody:
       'We may suspend or terminate access if you violate these terms, misuse the service, or if required by law. You may stop using Aidey at any time and may request account deletion by contacting lestermatthewsollano@gmail.com.',

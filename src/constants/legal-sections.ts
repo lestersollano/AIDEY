@@ -14,6 +14,8 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
   { titleKey: 'legal.privacy.purposesTitle', bodyKey: 'legal.privacy.purposesBody' },
   { titleKey: 'legal.privacy.legalBasisTitle', bodyKey: 'legal.privacy.legalBasisBody' },
   { titleKey: 'legal.privacy.sharingTitle', bodyKey: 'legal.privacy.sharingBody' },
+  { titleKey: 'legal.privacy.aiProcessingTitle', bodyKey: 'legal.privacy.aiProcessingBody' },
+  { titleKey: 'legal.privacy.crossBorderTitle', bodyKey: 'legal.privacy.crossBorderBody' },
   { titleKey: 'legal.privacy.retentionTitle', bodyKey: 'legal.privacy.retentionBody' },
   { titleKey: 'legal.privacy.securityTitle', bodyKey: 'legal.privacy.securityBody' },
   { titleKey: 'legal.privacy.rightsTitle', bodyKey: 'legal.privacy.rightsBody' },

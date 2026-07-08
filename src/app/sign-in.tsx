@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -24,6 +24,37 @@ import { getAuthErrorMessage } from '@/utils/auth-errors';
 
 type AuthMode = 'sign-in' | 'sign-up';
 
+type ConsentRowProps = {
+  checked: boolean;
+  onToggle: () => void;
+  accessibilityLabel: string;
+  children: ReactNode;
+};
+
+function ConsentRow({ checked, onToggle, accessibilityLabel, children }: ConsentRowProps) {
+  return (
+    <View style={styles.termsRow}>
+      <Pressable
+        style={styles.checkboxPressable}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked }}
+        accessibilityLabel={accessibilityLabel}
+        onPress={onToggle}>
+        <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
+          {checked ? (
+            <SymbolView
+              name={{ ios: 'checkmark', android: 'check', web: 'check' }}
+              size={14}
+              tintColor={colors.primary}
+            />
+          ) : null}
+        </View>
+      </Pressable>
+      <Text style={styles.termsText}>{children}</Text>
+    </View>
+  );
+}
+
 export default function SignInScreen() {
   const { isConfigured } = useAuth();
   const { t } = useTranslation();
@@ -32,18 +63,33 @@ export default function SignInScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
+  const [acceptedSensitiveProcessing, setAcceptedSensitiveProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const hasSignUpConsent =
+    acceptedTerms && acceptedPrivacy && acceptedSensitiveProcessing;
 
   const canSubmit =
     isConfigured &&
     !isSubmitting &&
-    (mode === 'sign-in' || acceptedTerms);
+    (mode === 'sign-in' || hasSignUpConsent);
 
   async function handleEmailSubmit() {
-    if (mode === 'sign-up' && !acceptedTerms) {
-      setError(t('auth.termsRequired'));
-      return;
+    if (mode === 'sign-up') {
+      if (!acceptedTerms) {
+        setError(t('auth.termsRequired'));
+        return;
+      }
+      if (!acceptedPrivacy) {
+        setError(t('auth.privacyRequired'));
+        return;
+      }
+      if (!acceptedSensitiveProcessing) {
+        setError(t('auth.sensitiveConsentRequired'));
+        return;
+      }
     }
 
     setError(null);
@@ -140,24 +186,11 @@ export default function SignInScreen() {
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
           {mode === 'sign-up' ? (
-            <View style={styles.termsRow}>
-              <Pressable
-                style={styles.checkboxPressable}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: acceptedTerms }}
-                accessibilityLabel={t('auth.termsAcceptPrefix')}
-                onPress={() => setAcceptedTerms((current) => !current)}>
-                <View style={[styles.checkbox, acceptedTerms && styles.checkboxChecked]}>
-                  {acceptedTerms ? (
-                    <SymbolView
-                      name={{ ios: 'checkmark', android: 'check', web: 'check' }}
-                      size={14}
-                      tintColor={colors.primary}
-                    />
-                  ) : null}
-                </View>
-              </Pressable>
-              <Text style={styles.termsText}>
+            <View style={styles.consentGroup}>
+              <ConsentRow
+                checked={acceptedTerms}
+                onToggle={() => setAcceptedTerms((current) => !current)}
+                accessibilityLabel={t('auth.termsAcceptPrefix')}>
                 {t('auth.termsAcceptPrefix')}{' '}
                 <Text
                   style={styles.termsLink}
@@ -165,7 +198,27 @@ export default function SignInScreen() {
                   onPress={() => router.push('/terms')}>
                   {t('auth.termsAcceptLink')}
                 </Text>
-              </Text>
+              </ConsentRow>
+
+              <ConsentRow
+                checked={acceptedPrivacy}
+                onToggle={() => setAcceptedPrivacy((current) => !current)}
+                accessibilityLabel={t('auth.privacyAcceptPrefix')}>
+                {t('auth.privacyAcceptPrefix')}{' '}
+                <Text
+                  style={styles.termsLink}
+                  accessibilityRole="link"
+                  onPress={() => router.push('/privacy-policy')}>
+                  {t('auth.privacyAcceptLink')}
+                </Text>
+              </ConsentRow>
+
+              <ConsentRow
+                checked={acceptedSensitiveProcessing}
+                onToggle={() => setAcceptedSensitiveProcessing((current) => !current)}
+                accessibilityLabel={t('auth.sensitiveConsentLabel')}>
+                {t('auth.sensitiveConsentLabel')}
+              </ConsentRow>
             </View>
           ) : null}
 
@@ -192,6 +245,8 @@ export default function SignInScreen() {
             onPress={() => {
               setError(null);
               setAcceptedTerms(false);
+              setAcceptedPrivacy(false);
+              setAcceptedSensitiveProcessing(false);
               setMode((current) => (current === 'sign-in' ? 'sign-up' : 'sign-in'));
             }}>
             <Text style={styles.switchModeText}>
@@ -279,6 +334,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#c0392b',
     lineHeight: 20,
+  },
+  consentGroup: {
+    gap: 12,
   },
   termsRow: {
     flexDirection: 'row',

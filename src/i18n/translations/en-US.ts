@@ -46,6 +46,14 @@ export const enUS: TranslationTree = {
         termsAcceptLink: "Terms and Conditions",
         termsRequired:
             "You must accept the Terms and Conditions to create an account.",
+        privacyAcceptPrefix: "I have read and agree to the",
+        privacyAcceptLink: "Privacy Policy",
+        privacyRequired:
+            "You must accept the Privacy Policy to create an account.",
+        sensitiveConsentLabel:
+            "I consent to Aidey storing photos of my government IDs and documents, and to sending images and chat messages to Google Gemini for AI assistance. I understand this may involve processing outside the Philippines.",
+        sensitiveConsentRequired:
+            "You must consent to sensitive data processing to create an account.",
         signOut: "Sign out",
         signOutConfirmTitle: "Sign out?",
         signOutConfirmMessage: "Are you sure you want to sign out of Aidey?",

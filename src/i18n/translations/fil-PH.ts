@@ -47,6 +47,14 @@ export const filPH: TranslationTree = {
         termsAcceptLink: "Terms and Conditions",
         termsRequired:
             "Kailangan mong tanggapin ang Terms and Conditions para makagawa ng account.",
+        privacyAcceptPrefix: "Nabasa ko at sumasang-ayon ako sa",
+        privacyAcceptLink: "Privacy Policy",
+        privacyRequired:
+            "Kailangan mong tanggapin ang Privacy Policy para makagawa ng account.",
+        sensitiveConsentLabel:
+            "Pinapahintulutan ko ang Aidey na mag-imbak ng mga larawan ng aking government ID at dokumento, at magpadala ng mga larawan at chat message sa Google Gemini para sa AI assistance. Nauunawaan ko na maaaring maganap ang pagproseso sa labas ng Pilipinas.",
+        sensitiveConsentRequired:
+            "Kailangan mong pumayag sa pagproseso ng sensitive data para makagawa ng account.",
         signOut: "Mag-sign out",
         signOutConfirmTitle: "Mag-sign out?",
         signOutConfirmMessage:
