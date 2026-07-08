@@ -108,6 +108,16 @@ img {
   color: var(--blue);
 }
 
+.nav-download {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  color: var(--white) !important;
+}
+
+.nav-download:hover {
+  color: var(--white) !important;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
