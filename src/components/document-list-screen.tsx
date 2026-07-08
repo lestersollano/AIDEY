@@ -30,8 +30,18 @@ export function DocumentListScreen({ category }: DocumentListScreenProps) {
     const categoryDocuments = DOCUMENTS.filter((document) => document.category === category);
     const matched = filterByFuzzyMatch(categoryDocuments, query, (document) => document.label);
 
-    return [...matched].sort((a, b) => a.label.localeCompare(b.label));
-  }, [category, query]);
+    return [...matched].sort((a, b) => {
+      const aCompleted = (uploads[a.id]?.length ?? 0) > 0;
+      const bCompleted = (uploads[b.id]?.length ?? 0) > 0;
+      
+      // Completed documents first, then alphabetically
+      if (aCompleted !== bCompleted) {
+        return bCompleted ? 1 : -1;
+      }
+      
+      return a.label.localeCompare(b.label);
+    });
+  }, [category, query, uploads]);
 
   return (
     <SafeAreaView style={styles.container}>
