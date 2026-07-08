@@ -29,6 +29,10 @@ export const enUS: TranslationTree = {
         dropdownLabel: "Menu",
         dropdownPlaceholder: "Select",
         greeting: "Hello, {{name}}",
+        emptyTaglinePrefix: "Aidey: Your guide to ",
+        emptyTaglineDocumentsWord: "Documents",
+        emptyTaglineMiddle: " and ",
+        emptyTaglineIdWord: "ID",
     },
     auth: {
         signInTagline: "Sign in to continue with Aidey.",

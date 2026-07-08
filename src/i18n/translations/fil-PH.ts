@@ -29,6 +29,10 @@ export const filPH: TranslationTree = {
         dropdownLabel: "Menu",
         dropdownPlaceholder: "Pumili",
         greeting: "Kumusta, {{name}}",
+        emptyTaglinePrefix: "Aidey: Ang Gabay sa ",
+        emptyTaglineDocumentsWord: "Dokumento",
+        emptyTaglineMiddle: " at ",
+        emptyTaglineIdWord: "ID",
     },
     auth: {
         signInTagline: "Mag-sign in para magpatuloy sa Aidey.",

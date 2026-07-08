@@ -33,7 +33,7 @@ export function Dropdown({
     const label = selectedOption?.label ?? placeholder;
 
     return (
-        <View style={[styles.container, style]}>
+        <View style={[styles.container, open && styles.containerOpen, style]}>
             <Pressable
                 style={({ pressed }) => [
                     styles.trigger,
@@ -120,7 +120,11 @@ export function Dropdown({
 const styles = StyleSheet.create({
     container: {
         width: "100%",
+        position: "relative",
         zIndex: 1,
+    },
+    containerOpen: {
+        zIndex: 20,
     },
     trigger: {
         width: "100%",
@@ -162,6 +166,10 @@ const styles = StyleSheet.create({
         fontFamily: fonts.regular,
     },
     menu: {
+        position: "absolute",
+        top: "100%",
+        left: 0,
+        right: 0,
         width: "100%",
         borderWidth: 1,
         borderTopWidth: 0,
@@ -174,7 +182,8 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.1,
         shadowRadius: 8,
-        elevation: 4,
+        elevation: 8,
+        zIndex: 20,
     },
     option: {
         minHeight: 48,

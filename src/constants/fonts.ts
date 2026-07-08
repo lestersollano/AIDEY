@@ -9,6 +9,7 @@ export const fonts = {
   black: 'Nunito_900Black',
   default: 'Nunito_700Bold',
   fredoka: 'Fredoka_700Bold',
+  fredokaRegular: 'Fredoka_400Regular',
 } as const;
 
 export type FontFamily = (typeof fonts)[keyof typeof fonts];

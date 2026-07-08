@@ -3,7 +3,7 @@ import { Image } from "expo-image";
 import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { IdCard } from "lucide-react-native";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import {
     SafeAreaView,
@@ -15,9 +15,22 @@ import { Dropdown } from "@/components/dropdown";
 import { HomeMenuSidebar } from "@/components/home-menu-sidebar";
 import { Text } from "@/components/text";
 import { brand, colors } from "@/constants/colors";
+import { DOCUMENTS } from "@/constants/documents";
 import { fonts } from "@/constants/fonts";
 import { useAuth } from "@/contexts/auth-context";
 import { useTranslation } from "@/contexts/locale-context";
+import {
+    useDocumentUploads,
+    useDocumentUploadsSyncStatus,
+} from "@/hooks/use-document-uploads";
+
+function getDefaultOwnedId(ownedIdIds: string[]) {
+    if (ownedIdIds.includes("national-id")) {
+        return "national-id";
+    }
+
+    return ownedIdIds[0] ?? null;
+}
 
 function pressableStyle(baseStyle: object, pressedStyle: object) {
     return ({ pressed }: { pressed: boolean }) => [
@@ -29,10 +42,49 @@ function pressableStyle(baseStyle: object, pressedStyle: object) {
 export default function HomeScreen() {
     const { t } = useTranslation();
     const { user } = useAuth();
+    const uploads = useDocumentUploads();
+    const { isLoading: uploadsLoading } = useDocumentUploadsSyncStatus();
     const [menuVisible, setMenuVisible] = useState(false);
-    const [dropdownValue, setDropdownValue] = useState<string | null>(null);
+    const [selectedId, setSelectedId] = useState<string | null>(null);
     const insets = useSafeAreaInsets();
     const greetingName = user?.displayName?.trim().split(/\s+/)[0] ?? t("auth.noName");
+
+    const ownedIdOptions = useMemo(
+        () =>
+            DOCUMENTS.filter(
+                (document) =>
+                    document.category === "id" &&
+                    (uploads[document.id]?.length ?? 0) > 0,
+            ).map((document) => ({
+                value: document.id,
+                label: document.label,
+            })),
+        [uploads],
+    );
+
+    const ownedIdIds = useMemo(
+        () => ownedIdOptions.map((option) => option.value),
+        [ownedIdOptions],
+    );
+
+    useEffect(() => {
+        if (ownedIdIds.length === 0) {
+            setSelectedId(null);
+            return;
+        }
+
+        setSelectedId((current) => {
+            if (current && ownedIdIds.includes(current)) {
+                return current;
+            }
+
+            return getDefaultOwnedId(ownedIdIds);
+        });
+    }, [ownedIdIds]);
+
+    const selectedIdImageUri = selectedId
+        ? uploads[selectedId]?.[0]?.localUri
+        : undefined;
 
     return (
         <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
@@ -126,7 +178,11 @@ export default function HomeScreen() {
                                         />
                                     </View>
                                     <View style={styles.buttonTextWrapper}>
-                                        <Text style={styles.buttonText}>
+                                        <Text
+                                            style={[
+                                                styles.buttonText,
+                                                styles.buttonTextDocuments,
+                                            ]}>
                                             {t("home.documentsTitle")}
                                         </Text>
                                         <Text style={styles.buttonSubtext}>
@@ -163,13 +219,17 @@ export default function HomeScreen() {
                                         ]}
                                     >
                                         <Image
-                                            source={require("@/assets/images/mascot/cropped/mgadokumentoatid.png")}
+                                            source={require("@/assets/images/mascot/mood/confused.png")}
                                             style={styles.buttonIcon}
                                             contentFit="contain"
                                         />
                                     </View>
                                     <View style={styles.buttonTextWrapper}>
-                                        <Text style={styles.buttonText}>
+                                        <Text
+                                            style={[
+                                                styles.buttonText,
+                                                styles.buttonTextIds,
+                                            ]}>
                                             {t("home.idsTitle")}
                                         </Text>
                                         <Text style={styles.buttonSubtext}>
@@ -191,16 +251,39 @@ export default function HomeScreen() {
 
                         <View style={styles.divider} />
 
-                        <Dropdown
-                            style={styles.dropdown}
-                            options={[]}
-                            value={dropdownValue}
-                            onChange={setDropdownValue}
-                            placeholder={t("home.dropdownPlaceholder")}
-                            accessibilityLabel={t("home.dropdownLabel")}
-                        />
+                        {!uploadsLoading && ownedIdOptions.length > 0 ? (
+                            <>
+                                <Dropdown
+                                    style={styles.dropdown}
+                                    options={ownedIdOptions}
+                                    value={selectedId}
+                                    onChange={setSelectedId}
+                                    placeholder={t("home.dropdownPlaceholder")}
+                                    accessibilityLabel={t("home.dropdownLabel")}
+                                />
 
-                        <View style={styles.card} />
+                                <View style={styles.card}>
+                                    {selectedIdImageUri ? (
+                                        <Image
+                                            source={{ uri: selectedIdImageUri }}
+                                            style={styles.cardImage}
+                                            contentFit="cover"
+                                        />
+                                    ) : null}
+                                </View>
+                            </>
+                        ) : !uploadsLoading ? (
+                            <Text style={styles.tagline}>
+                                {t("home.emptyTaglinePrefix")}
+                                <Text style={styles.taglineDocuments}>
+                                    {t("home.emptyTaglineDocumentsWord")}
+                                </Text>
+                                {t("home.emptyTaglineMiddle")}
+                                <Text style={styles.taglineId}>
+                                    {t("home.emptyTaglineIdWord")}
+                                </Text>
+                            </Text>
+                        ) : null}
                     </ScrollView>
                 </View>
             </View>
@@ -345,6 +428,7 @@ const styles = StyleSheet.create({
     },
     dropdown: {
         marginTop: 20,
+        zIndex: 2,
     },
     card: {
         marginTop: 20,
@@ -354,6 +438,30 @@ const styles = StyleSheet.create({
         backgroundColor: colors.secondaryMuted,
         borderWidth: 1,
         borderColor: colors.secondaryBorder,
+        overflow: "hidden",
+        zIndex: 1,
+    },
+    cardImage: {
+        width: "100%",
+        height: "100%",
+    },
+    tagline: {
+        marginTop: 28,
+        alignSelf: "center",
+        maxWidth: 280,
+        fontSize: 13,
+        lineHeight: 18,
+        fontFamily: fonts.fredokaRegular,
+        color: colors.secondaryPlaceholder,
+        textAlign: "center",
+    },
+    taglineDocuments: {
+        color: brand.blue,
+        fontFamily: fonts.fredokaRegular,
+    },
+    taglineId: {
+        color: brand.teal,
+        fontFamily: fonts.fredokaRegular,
     },
     button: {
         width: "100%",
@@ -403,6 +511,12 @@ const styles = StyleSheet.create({
         color: brand.navy,
         fontSize: 16,
         fontFamily: fonts.semiBold,
+    },
+    buttonTextDocuments: {
+        color: brand.blue,
+    },
+    buttonTextIds: {
+        color: brand.teal,
     },
     buttonSubtext: {
         fontSize: 13,
