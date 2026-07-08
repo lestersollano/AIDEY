@@ -3,14 +3,17 @@ import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+    SafeAreaView,
+    useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import { AideyWordmark } from "@/components/aidey-wordmark";
 import { HomeMenuSidebar } from "@/components/home-menu-sidebar";
 import { Text } from "@/components/text";
-import { useTranslation } from "@/contexts/locale-context";
 import { brand, colors } from "@/constants/colors";
 import { fonts } from "@/constants/fonts";
+import { useTranslation } from "@/contexts/locale-context";
 
 function pressableStyle(baseStyle: object, pressedStyle: object) {
     return ({ pressed }: { pressed: boolean }) => [
@@ -78,11 +81,52 @@ export default function HomeScreen() {
                                 />
                             </View>
                             <View style={styles.buttonTextWrapper}>
-                                <Text style={styles.buttonTextDocuments}>
+                                <Text style={styles.buttonText}>
                                     {t("home.documentsTitle")}
                                 </Text>
                                 <Text style={styles.buttonSubtext}>
                                     {t("home.documentsSubtitle")}
+                                </Text>
+                            </View>
+                            <SymbolView
+                                name={{
+                                    ios: "chevron.right",
+                                    android: "chevron_right",
+                                    web: "chevron_right",
+                                }}
+                                size={18}
+                                tintColor={brand.navy}
+                            />
+                        </View>
+                    </Pressable>
+
+                    <Pressable
+                        style={pressableStyle(
+                            styles.button,
+                            styles.buttonPressed,
+                        )}
+                        android_ripple={{ color: "rgba(0, 22, 106, 0.12)" }}
+                        onPress={() => router.push("/ids")}
+                    >
+                        <View style={styles.buttonRow}>
+                            <View
+                                style={[
+                                    styles.buttonMedia,
+                                    styles.buttonMediaIds,
+                                ]}
+                            >
+                                <Image
+                                    source={require("@/assets/images/mascot/cropped/mgadokumentoatid.png")}
+                                    style={styles.buttonIcon}
+                                    contentFit="contain"
+                                />
+                            </View>
+                            <View style={styles.buttonTextWrapper}>
+                                <Text style={styles.buttonText}>
+                                    {t("home.idsTitle")}
+                                </Text>
+                                <Text style={styles.buttonSubtext}>
+                                    {t("home.idsSubtitle")}
                                 </Text>
                             </View>
                             <SymbolView
@@ -192,6 +236,9 @@ const styles = StyleSheet.create({
     buttonMediaDocuments: {
         backgroundColor: "rgba(0, 22, 106, 0.06)",
     },
+    buttonMediaIds: {
+        backgroundColor: "rgba(0, 22, 106, 0.06)",
+    },
     buttonIcon: {
         width: 64,
         height: 64,
@@ -200,7 +247,7 @@ const styles = StyleSheet.create({
         flex: 1,
         gap: 2,
     },
-    buttonTextDocuments: {
+    buttonText: {
         color: brand.navy,
         fontSize: 16,
         fontFamily: fonts.semiBold,

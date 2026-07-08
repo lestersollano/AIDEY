@@ -50,6 +50,7 @@
   },
   "scripts": {
     "postinstall": "node scripts/fix-foojay-gradle.mjs",
+    "dev": "expo start --dev-client",
     "start": "expo start --dev-client",
     "start:go": "expo start",
     "android": "bash scripts/run-android.sh",

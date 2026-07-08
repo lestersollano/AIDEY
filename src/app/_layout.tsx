@@ -70,6 +70,7 @@ export default function RootLayout() {
               <Stack.Screen name="ai-assistant" options={fadeScreenOptions} />
               <Stack.Screen name="map-directions" options={fadeScreenOptions} />
               <Stack.Screen name="documents/index" options={fadeScreenOptions} />
+              <Stack.Screen name="ids/index" options={fadeScreenOptions} />
               <Stack.Screen name="documents/[id]/index" options={fadeScreenOptions} />
               <Stack.Screen name="documents/[id]/mayroon" options={fadeScreenOptions} />
               <Stack.Screen name="documents/[id]/wala" options={fadeScreenOptions} />
