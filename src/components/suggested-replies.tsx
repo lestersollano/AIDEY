@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
   content: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
     alignItems: 'flex-start',
     justifyContent: 'flex-start',
   },
@@ -56,10 +56,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   chip: {
-    minHeight: 44,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 22,
+    minHeight: 36,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: brand.teal,
     backgroundColor: 'rgba(1, 154, 143, 0.08)',
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.98 }],
   },
   chipText: {
-    fontSize: 15,
+    fontSize: 13,
     fontFamily: fonts.semiBold,
     color: brand.teal,
     textAlign: 'center',

@@ -169,6 +169,8 @@ export const filPH: TranslationTree = {
         placeholder: "I-type ang tanong mo dito...",
         camera: "Camera",
         uploadImage: "Upload image",
+        imagePrompt: "Maaari mo bang tulungan ako sa larawang ito?",
+        removeImage: "Alisin ang larawan",
         sendMessage: "Send message",
         locationError:
             "Hindi makuha ang lokasyon. Subukan muli o i-type ang iyong lungsod.",

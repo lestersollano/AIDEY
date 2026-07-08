@@ -161,6 +161,8 @@ export const enUS: TranslationTree = {
         placeholder: "Type your question here...",
         camera: "Camera",
         uploadImage: "Upload image",
+        imagePrompt: "Can you help me with this image?",
+        removeImage: "Remove image",
         sendMessage: "Send message",
         locationError: "Could not get location. Try again or type your city.",
         arrivalMessage: "I've arrived at {{name}}. I'm near the office now.",

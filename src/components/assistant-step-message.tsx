@@ -95,7 +95,6 @@ function getAssistantMood(text: string): AssistantMood {
 
 type AssistantStepMessageProps = {
   reply: AideyReply;
-  model?: string;
   suggestionsDisabled?: boolean;
   userLocation?: UserCoordinates;
   onSelectSuggestion?: (suggestion: Suggestion) => void;
@@ -108,7 +107,6 @@ type AssistantStepMessageProps = {
 
 export function AssistantStepMessage({
   reply,
-  model,
   suggestionsDisabled = false,
   userLocation,
   onSelectSuggestion,
@@ -135,7 +133,6 @@ export function AssistantStepMessage({
           style={styles.avatar}
           contentFit="contain"
         />
-        {model ? <Text style={styles.modelLabel}>{model}</Text> : null}
       </View>
 
       <View style={styles.bubble}>
@@ -196,13 +193,6 @@ const styles = StyleSheet.create({
   avatar: {
     width: 80,
     height: 80,
-  },
-  modelLabel: {
-    flexShrink: 1,
-    fontSize: 11,
-    fontFamily: fonts.regular,
-    color: colors.secondaryPlaceholder,
-    marginBottom: 4,
   },
   bubble: {
     alignSelf: 'stretch',

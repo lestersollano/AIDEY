@@ -6,6 +6,7 @@ import { translate } from '@/i18n';
 import { DOCUMENTS } from '@/constants/documents';
 import { getDocumentGuide, getRequirementLabel } from '@/constants/document-guides';
 import type { DocumentGuideProgress } from '@/services/document-guide-progress';
+import { readImageAsInlineData } from '@/utils/image-data';
 import {
   AIDEY_RESPONSE_JSON_SCHEMA,
   createFallbackReply,
@@ -19,7 +20,16 @@ export type ChatRole = 'user' | 'assistant';
 export type ChatMessage = {
   role: ChatRole;
   text: string;
+  imageUri?: string;
+  imageMimeType?: string;
 };
+
+export type ChatImageInput = {
+  uri: string;
+  mimeType?: string;
+};
+
+type GeminiPart = { text: string } | { inlineData: { mimeType: string; data: string } };
 
 export type ChatSessionContext = {
   documentLabel?: string;
@@ -173,8 +183,24 @@ function buildSystemPrompt(context?: ChatSessionContext): string {
     '(8) If the user asks what IDs/documents they already have, or which ones they are missing, answer using the owned-documents list above (compare it against the catalogue) instead of asking them to repeat what they have. If asked about their progress on a specific document, also factor in the step-by-step guide progress noted above (if any) — it counts as real, already-completed work even though it happened outside this chat. ' +
     '(9) If a checklist state is already given to you above, you MUST return that EXACT same checklist (same ids, labels, order) in the "checklist" field of every reply from now on — only flip "done" to true for a milestone once it is genuinely finished based on the conversation (e.g. user confirms they have all documents, GPS arrival is signaled, user says they talked to the clerk). Never mark an item done just because you mentioned or explained it. ' +
     'If no checklist state is given above yet, but the user has clearly stated a specific multi-step task/goal (e.g. getting a specific document or ID, going to a specific office), include a "checklist" field starting with THIS reply — do not wait — with 3-5 short milestone items covering the whole journey end-to-end (e.g. "Ihanda ang mga kinakailangang dokumento", "Pumunta sa opisina", "Kausapin ang clerk o staff", "Kumpletuhin ang application/tanggapin ang output"), each with a stable id (lowercase-kebab-case), a short label, and done=false initially. ' +
-    'Do not include a checklist field for simple one-off questions, greetings, or general info that is not a multi-step journey for the user to complete.'
+    'Do not include a checklist field for simple one-off questions, greetings, or general info that is not a multi-step journey for the user to complete. ' +
+    '(11) When the user sends an image, analyze it in the context of Philippine government documents and IDs. Identify what it likely shows, note anything missing or unclear, and guide the next step.'
   );
+}
+
+async function buildUserMessageParts(message: ChatMessage): Promise<GeminiPart[]> {
+  const parts: GeminiPart[] = [];
+
+  if (message.imageUri) {
+    const inlineData = await readImageAsInlineData(message.imageUri, message.imageMimeType);
+    parts.push({ inlineData });
+  }
+
+  if (message.text) {
+    parts.push({ text: message.text });
+  }
+
+  return parts;
 }
 
 export class AllModelsFailedError extends Error {
@@ -214,6 +240,7 @@ async function sendMessageWithModel(
   history: ChatMessage[],
   newMessage: string,
   context?: ChatSessionContext,
+  newImage?: ChatImageInput,
 ): Promise<AideyReply> {
   const chat = getClient().chats.create({
     model,
@@ -222,13 +249,25 @@ async function sendMessageWithModel(
       responseMimeType: 'application/json',
       responseJsonSchema: AIDEY_RESPONSE_JSON_SCHEMA,
     },
-    history: history.map((message) => ({
-      role: message.role === 'user' ? 'user' : 'model',
-      parts: [{ text: message.text }],
-    })),
+    history: await Promise.all(
+      history.map(async (message) => ({
+        role: message.role === 'user' ? 'user' : 'model',
+        parts:
+          message.role === 'user'
+            ? await buildUserMessageParts(message)
+            : [{ text: message.text }],
+      })),
+    ),
   });
 
-  const response = await chat.sendMessage({ message: newMessage });
+  const response = await chat.sendMessage({
+    message: await buildUserMessageParts({
+      role: 'user',
+      text: newMessage,
+      imageUri: newImage?.uri,
+      imageMimeType: newImage?.mimeType,
+    }),
+  });
   const text = response.text?.trim();
 
   if (!text) {
@@ -242,6 +281,7 @@ export async function sendMessage(
   history: ChatMessage[],
   newMessage: string,
   context?: ChatSessionContext,
+  newImage?: ChatImageInput,
 ): Promise<ChatReply> {
   getApiKey();
 
@@ -250,7 +290,7 @@ export async function sendMessage(
 
   for (const model of models) {
     try {
-      const reply = await sendMessageWithModel(model, history, newMessage, context);
+      const reply = await sendMessageWithModel(model, history, newMessage, context, newImage);
       return { ...reply, model };
     } catch (error) {
       lastError = error;

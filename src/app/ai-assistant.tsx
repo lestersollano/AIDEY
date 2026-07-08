@@ -1,9 +1,11 @@
 import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -81,6 +83,11 @@ import {
 
 type UiChatMessage = ChatMessageRecord;
 
+type PendingImage = {
+  uri: string;
+  mimeType?: string;
+};
+
 const MOOD_IMAGES = {
   thinking: require('@/assets/images/mascot/mood/thinking.png'),
 } as const;
@@ -150,6 +157,7 @@ export default function AiAssistantScreen() {
     typeof documentId === 'string' && documentId ? documentId : undefined;
 
   const [message, setMessage] = useState('');
+  const [pendingImage, setPendingImage] = useState<PendingImage | null>(null);
   const [messages, setMessages] = useState<UiChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [connectionChecked, setConnectionChecked] = useState(false);
@@ -171,7 +179,7 @@ export default function AiAssistantScreen() {
   const documentUploads = useDocumentUploads();
   const ownedDocumentIds = Object.keys(documentUploads);
   const documentGuideProgress = useAllDocumentGuideProgress();
-  const canSend = message.trim().length > 0 && !isLoading;
+  const canSend = (message.trim().length > 0 || pendingImage !== null) && !isLoading;
   const mapIsRelevant = isMapRelevantInConversation(messages);
   const activeMapDestination = getActiveMapDestination(messages);
   const liveUserLocation = useLiveUserLocation(mapIsRelevant);
@@ -406,37 +414,48 @@ export default function AiAssistantScreen() {
 
   async function submitMessage(
     text: string,
-    options?: { userLocation?: UserLocation },
+    options?: { userLocation?: UserLocation; image?: PendingImage },
   ) {
     if (isLoading) return;
 
     const trimmed = text.trim();
-    if (!trimmed) return;
+    const image = options?.image;
+    if (!trimmed && !image) return;
 
-    const userMessage = createMessage('user', trimmed);
-    const history = messages.map(({ role, text: content }) => ({ role, text: content }));
+    const messageText = trimmed || t('ai.imagePrompt');
+    const userMessage = createMessage('user', messageText, undefined, undefined, {
+      imageUri: image?.uri,
+      imageMimeType: image?.mimeType,
+    });
+    const history = messages.map(({ role, text: content, imageUri, imageMimeType }) => ({
+      role,
+      text: content,
+      imageUri,
+      imageMimeType,
+    }));
     let locationForOfficeLookup = options?.userLocation ?? userLocation;
 
     setMessages((current) => [...current, userMessage]);
     setMessage('');
+    setPendingImage(null);
     setIsLoading(true);
     scrollToBottom();
 
     try {
-      const reply = await sendMessage(history, trimmed, {
+      const reply = await sendMessage(history, messageText, {
         documentLabel: activeDocumentLabel,
         ownedDocumentIds,
         documentGuideProgress,
         checklist: checklistItems.length ? checklistItems : undefined,
         locale,
-      });
+      }, image);
 
       if (reply.checklist?.length) {
         setChecklistItems(reply.checklist);
       }
 
       const officeContext = {
-        userMessage: trimmed,
+        userMessage: messageText,
         userLocation: locationForOfficeLookup ?? undefined,
         documentLabel: activeDocumentLabel,
         history,
@@ -523,6 +542,49 @@ export default function AiAssistantScreen() {
     });
   }
 
+  async function handleTakePhoto() {
+    if (isLoading) return;
+
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+
+    if (!permission.granted) {
+      Alert.alert(t('documents.upload.permissionTitle'), t('documents.upload.cameraPermission'));
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      setPendingImage({ uri: asset.uri, mimeType: asset.mimeType });
+    }
+  }
+
+  async function handlePickImage() {
+    if (isLoading) return;
+
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permission.granted) {
+      Alert.alert(t('documents.upload.permissionTitle'), t('documents.upload.photosPermission'));
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      setPendingImage({ uri: asset.uri, mimeType: asset.mimeType });
+    }
+  }
+
   function handleAddToGallery() {
     // Gallery is not functional yet — adding documents will be wired up later.
   }
@@ -535,6 +597,7 @@ export default function AiAssistantScreen() {
     setFinishedTaskIds(new Set());
     setActiveDocumentId(undefined);
     setActiveDocumentLabel(undefined);
+    setPendingImage(null);
     setSidebarVisible(false);
   }
 
@@ -598,7 +661,7 @@ export default function AiAssistantScreen() {
   }, [connectionChecked, sessionResumed, initialPrompt]);
 
   async function handleSend() {
-    await submitMessage(message);
+    await submitMessage(message, { image: pendingImage ?? undefined });
   }
 
   if (!connectionChecked) {
@@ -691,9 +754,23 @@ export default function AiAssistantScreen() {
                 return item.role === 'user' ? (
                   <View key={item.id} style={styles.messageRow}>
                     <View style={[styles.bubble, styles.userBubble]}>
-                      <Text style={[styles.bubbleText, styles.userBubbleText]}>
-                        {item.text}
-                      </Text>
+                      {item.imageUri ? (
+                        <Image
+                          source={{ uri: item.imageUri }}
+                          style={styles.userMessageImage}
+                          contentFit="cover"
+                        />
+                      ) : null}
+                      {item.text ? (
+                        <Text
+                          style={[
+                            styles.bubbleText,
+                            styles.userBubbleText,
+                            item.imageUri && styles.userBubbleTextWithImage,
+                          ]}>
+                          {item.text}
+                        </Text>
+                      ) : null}
                     </View>
                   </View>
                 ) : (
@@ -701,7 +778,6 @@ export default function AiAssistantScreen() {
                     {item.structured ? (
                       <AssistantStepMessage
                         reply={item.structured}
-                        model={item.model}
                         suggestionsDisabled={isLoading}
                         userLocation={trackedUserLocation}
                         onSelectSuggestion={
@@ -747,6 +823,28 @@ export default function AiAssistantScreen() {
                 textAlignVertical="top"
               />
 
+              {pendingImage ? (
+                <View style={styles.pendingImageRow}>
+                  <Image
+                    source={{ uri: pendingImage.uri }}
+                    style={styles.pendingImage}
+                    contentFit="cover"
+                  />
+                  <Pressable
+                    style={pressableStyle(styles.removePendingImageButton, styles.iconButtonPressed)}
+                    accessibilityLabel={t('ai.removeImage')}
+                    disabled={isLoading}
+                    onPress={() => setPendingImage(null)}
+                    hitSlop={8}>
+                    <SymbolView
+                      name={{ ios: 'xmark', android: 'close', web: 'close' }}
+                      size={14}
+                      tintColor={colors.primary}
+                    />
+                  </Pressable>
+                </View>
+              ) : null}
+
               <View style={styles.toolbar}>
                 <View style={styles.toolbarLeft}>
                   <SpeechToTextButton
@@ -774,6 +872,7 @@ export default function AiAssistantScreen() {
                     style={pressableStyle(styles.iconButton, styles.iconButtonPressed)}
                     accessibilityLabel={t('ai.camera')}
                     disabled={isLoading}
+                    onPress={() => void handleTakePhoto()}
                     hitSlop={8}>
                     <SymbolView
                       name={{ ios: 'camera.fill', android: 'photo_camera', web: 'photo_camera' }}
@@ -785,6 +884,7 @@ export default function AiAssistantScreen() {
                     style={pressableStyle(styles.iconButton, styles.iconButtonPressed)}
                     accessibilityLabel={t('ai.uploadImage')}
                     disabled={isLoading}
+                    onPress={() => void handlePickImage()}
                     hitSlop={8}>
                     <SymbolView
                       name={{ ios: 'photo.fill', android: 'image', web: 'image' }}
@@ -921,6 +1021,7 @@ const styles = StyleSheet.create({
     maxWidth: '80%',
     borderBottomRightRadius: 4,
     backgroundColor: brand.teal,
+    overflow: 'hidden',
   },
   assistantBubble: {
     maxWidth: '85%',
@@ -941,6 +1042,14 @@ const styles = StyleSheet.create({
   },
   userBubbleText: {
     color: colors.primary,
+  },
+  userBubbleTextWithImage: {
+    marginTop: 8,
+  },
+  userMessageImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 12,
   },
   assistantBubbleText: {
     color: brand.navy,
@@ -966,6 +1075,28 @@ const styles = StyleSheet.create({
     fontFamily: fonts.regular,
     color: brand.navy,
     backgroundColor: 'transparent',
+  },
+  pendingImageRow: {
+    position: 'relative',
+    alignSelf: 'flex-start',
+  },
+  pendingImage: {
+    width: 72,
+    height: 72,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.secondaryBorder,
+  },
+  removePendingImageButton: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: brand.navy,
   },
   toolbar: {
     flexDirection: 'row',

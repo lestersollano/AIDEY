@@ -22,6 +22,8 @@ export type ChatMessageRecord = {
   id: string;
   role: ChatRole;
   text: string;
+  imageUri?: string;
+  imageMimeType?: string;
   structured?: AideyReply;
   model?: string;
   isArrivalCheck?: boolean;
